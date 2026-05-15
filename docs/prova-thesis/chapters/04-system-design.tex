@@ -1,0 +1,319 @@
+\chapter{Proposed System Design}
+
+\section{Overview}
+This chapter translates the requirements and analysis artifacts from Chapter~3 into concrete design decisions. It describes the high-level architecture, the internal structure of each service, the API design contracts, the data flow between services, the algorithmic stages within each AI pipeline, the security architecture, and the deployment topology. The design prioritizes modularity, independent scalability of AI workloads, and a clear separation between business logic and inference-heavy components.
+
+\section{Architecture Overview}
+
+\projectname\ follows a \textbf{service-oriented architecture (SOA)} comprising four independently deployable services that communicate over HTTP/REST:
+
+\begin{enumerate}[leftmargin=*]
+    \item \textbf{Frontend Service} — A Next.js application that renders the user interface, manages client-side state, handles internationalization (Arabic/English with RTL support), and communicates with the backend and AI services via REST calls.
+
+    \item \textbf{Backend Service} — An Express.js application written in TypeScript that serves as the central orchestrator. It handles authentication, authorization, business logic for e-commerce and community features, proxies requests to AI services, and manages all persistent data through MongoDB.
+
+    \item \textbf{Try-On Service} — A FastAPI application that exposes specialized endpoints for virtual try-on (2D and multiview), body measurement estimation, video preprocessing, and 360-degree reconstruction. It manages connections to external inference servers and local preprocessing pipelines.
+
+    \item \textbf{Chat Service (RAG)} — A FastAPI application that implements the fashion-aware retrieval-augmented generation pipeline. It handles message classification, intent extraction, product retrieval with hybrid search, outfit assembly, and bilingual response generation.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \fbox{\parbox{0.9\textwidth}{\centering\vspace{3cm}\textit{High-Level Architecture Diagram --- to be inserted}\vspace{3cm}}}
+    \caption{High-level service-oriented architecture of \projectname.}
+    \label{fig:arch-overview}
+\end{figure}
+
+The frontend communicates directly with the backend for all e-commerce, authentication, and community operations. For AI features, two patterns are used: (1)~the backend proxies try-on and measurement requests to the Try-On Service, adding authentication validation and result persistence before forwarding; (2)~the frontend communicates directly with the Chat Service for real-time conversational interactions, as the RAG pipeline maintains its own in-memory conversation history and does not require backend-mediated persistence for the chat flow itself.
+
+\section{Frontend Design}
+
+\subsection{Framework and Routing}
+The frontend uses \textbf{Next.js} with the App Router architecture. All user-facing pages are nested under a \texttt{[locale]} dynamic segment that enables locale-based routing. The locale parameter drives language selection (Arabic or English) and layout direction (RTL or LTR). The routing hierarchy is structured as follows:
+
+\begin{verbatim}
+app/
+  [locale]/
+    page.tsx              # Landing / Home
+    shop/                 # Product catalog
+    product/[id]/         # Product detail
+    cart/                 # Shopping cart
+    checkout/             # Checkout flow
+    orders/               # Order history
+    order-success/        # Order confirmation
+    profile/              # User profile & settings
+    virtual-tryon/        # Try-on interface
+    community/            # Posts, designs, feed
+    recommendations/      # AI-powered suggestions
+    customer-service/     # Support ticket interface
+    merchant-owner/       # Merchant dashboard
+    admin/                # Admin panel
+    login/ | signup/      # Authentication pages
+    wishlist/             # Saved items
+    dashboard/            # User dashboard
+\end{verbatim}
+
+\subsection{State Management and API Communication}
+The frontend uses React hooks and context for local state management. API communication is centralized through a typed API client module that handles:
+\begin{itemize}[leftmargin=*]
+    \item Attaching JWT access tokens from local storage to all authenticated requests.
+    \item Intercepting \texttt{401 Unauthorized} responses and checking for a refreshed token in the \texttt{X-New-Access-Token} response header (transparent token rotation).
+    \item Providing typed request/response wrappers for each backend endpoint.
+\end{itemize}
+
+\subsection{Internationalization (i18n)}
+The application supports Arabic and English through Next.js internationalized routing. Each locale has its own translation files loaded at build time. The layout component reads the current locale parameter and applies the appropriate \texttt{dir} attribute (\texttt{rtl} for Arabic, \texttt{ltr} for English) to the root HTML element. All UI text, labels, and messages reference translation keys rather than hardcoded strings.
+
+\section{Backend Design}
+
+\subsection{Module Architecture}
+The backend follows a \textbf{layered module pattern} where each domain feature is encapsulated in its own directory under \texttt{src/modules/}. Every module contains four standard files:
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Routes} (\texttt{*.routes.ts}) — Defines Express router endpoints, attaches middleware (authentication, validation, rate limiting), and maps HTTP methods to controller functions.
+    \item \textbf{Controller} (\texttt{*.controller.ts}) — Parses request parameters and body, delegates to the service layer, and formats HTTP responses.
+    \item \textbf{Service} (\texttt{*.service.ts}) — Contains business logic, database queries, and integration calls. Services are stateless functions.
+    \item \textbf{Model} (\texttt{*.model.ts}) — Defines the Mongoose schema, TypeScript interfaces, indexes, and virtual fields for the module's data entity.
+\end{itemize}
+
+An optional \textbf{Schema} file (\texttt{*.schema.ts}) defines Zod validation schemas that are enforced by a generic validation middleware before the request reaches the controller.
+
+\subsection{Middleware Pipeline}
+Incoming requests pass through a layered middleware pipeline before reaching route handlers:
+
+\begin{enumerate}[leftmargin=*]
+    \item \textbf{Security Headers} — Helmet middleware applies HTTP security headers (Content-Security-Policy, X-Frame-Options, etc.).
+    \item \textbf{CORS} — Configured to allow requests only from authorized frontend origins with credentials support.
+    \item \textbf{Rate Limiting} — Two tiers: a general API rate limiter and a stricter authentication-specific rate limiter for login, signup, and password reset endpoints.
+    \item \textbf{Body Parsing} — JSON and URL-encoded body parsing with configurable size limits.
+    \item \textbf{Authentication} — JWT verification with automatic token refresh. The middleware extracts the Bearer token, verifies it against the JWT secret, and attaches the decoded user object to the request. If the access token is expired but a valid refresh token cookie is present, the middleware silently issues a new access token via the \texttt{X-New-Access-Token} response header.
+    \item \textbf{Role Authorization} — A configurable role guard that checks whether the authenticated user's role is in the set of permitted roles for the endpoint.
+    \item \textbf{Validation} — Zod schema validation middleware that validates request body, query, and params against the module's schema definitions, returning structured error responses on failure.
+    \item \textbf{Profanity Guard} — Content moderation middleware applied to user-generated content endpoints.
+\end{enumerate}
+
+An \textbf{optional authentication middleware} variant is also provided for endpoints that enhance the experience for authenticated users but remain accessible to anonymous visitors (e.g., product browsing with personalized recommendations).
+
+\subsection{User Caching}
+To reduce database load on the authentication hot path, the backend implements an in-memory user cache. On successful JWT verification, the user document is stored in a TTL-bounded LRU cache keyed by user ID. Subsequent requests from the same user within the TTL window are served from cache, bypassing the MongoDB query. Cache entries are invalidated when the user's token version changes (e.g., after password change or forced logout).
+
+\subsection{Error Handling}
+A global error handler middleware catches all unhandled exceptions and returns standardized JSON error responses with appropriate HTTP status codes. Domain-specific errors (e.g., \texttt{ServiceUnavailableError}, \texttt{ExternalAPIError}, \texttt{ProcessingError}) are defined as custom exception classes that carry structured metadata for debugging.
+
+\section{Try-On Service Design}
+
+\subsection{Service Architecture}
+The Try-On Service is a \textbf{FastAPI} application organized into routers, service clients, preprocessing modules, and a centralized dependency injection container.
+
+\textbf{Routers} define the API surface:
+\begin{itemize}[leftmargin=*]
+    \item \texttt{/api/tryon} — Single-view 2D virtual try-on using OOTDiffusion via a remote Colab inference server.
+    \item \texttt{/api/multiangle} — Multi-angle try-on using a multimodal generative model for front, right, left, and back viewpoints.
+    \item \texttt{/api/vton360} — Multiview pipeline with preprocessing, dataset construction, remote inference, and result retrieval.
+    \item \texttt{/api/measurements} — Body measurement estimation using the SHAPY client with size recommendation mapping.
+    \item \texttt{/api/video360} — 360-degree video generation from multiview try-on outputs.
+    \item \texttt{/api/health} — Aggregated health check across all service clients.
+\end{itemize}
+
+\textbf{Service Clients} encapsulate communication with external inference services. Each client follows a consistent pattern:
+\begin{itemize}[leftmargin=*]
+    \item Configurable base URL, timeouts, and connection pool limits via environment variables.
+    \item Automatic retry with exponential backoff for transient failures (HTTP 429, 5xx).
+    \item Health check methods for proactive monitoring.
+    \item Structured exception hierarchy (\texttt{ServiceUnavailableError}, \texttt{ExternalAPIError}).
+\end{itemize}
+
+A \textbf{ClientState} singleton manages the lifecycle of all service clients. It is initialized once at application startup and provides dependency injection to routers via FastAPI's dependency system.
+
+\subsection{Multi-Angle Try-On Pipeline Design}
+The multi-angle try-on client implements a two-stage pipeline for producing realistic virtual try-on results across multiple viewpoints:
+
+\textbf{Stage 1 --- Garment Preparation.} Before try-on synthesis, the system determines whether the garment reference image contains a model wearing the garment or is a flat product shot. The decision is made through a three-step heuristic:
+\begin{enumerate}[leftmargin=*]
+    \item Check for transparent background (alpha channel analysis) --- transparent images are classified as flat product shots.
+    \item Detect skin-tone pixels using RGB-space rules and check for portrait aspect ratio --- images with significant skin content in portrait orientation are classified as model-worn.
+    \item If the source mode is ambiguous (\texttt{auto}), the heuristic result is used; explicit modes (\texttt{flat\_product}, \texttt{model\_worn}) override the heuristic.
+\end{enumerate}
+
+For model-worn garment references, an extraction step uses the multimodal model to isolate the garment from the person, producing a clean product image before try-on synthesis.
+
+\textbf{Stage 2 --- Try-On Synthesis.} The prepared garment image and the person image are submitted to the generative model with a composed prompt. The prompt is dynamically constructed from a base template augmented with control parameters:
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Garment type} (upper/lower/dress/shoes) --- instructs the model on which body region to modify.
+    \item \textbf{Shirt placement} (tucked/untucked) --- controls hem behavior.
+    \item \textbf{View hint} (front/right/left/back) --- preserves the camera orientation of the person image.
+\end{itemize}
+
+For multi-angle try-on, the system processes multiple viewpoints concurrently using an asyncio semaphore (concurrency limit of 2) to balance throughput against API rate limits. Garment preparation is performed once and shared across all views.
+
+\subsection{Multiview (VTON360) Pipeline Design}
+The multiview pipeline is designed for generating view-consistent try-on results across all angles. It operates in five stages:
+
+\begin{enumerate}[leftmargin=*]
+    \item \textbf{Preprocessing} — Input video or images are processed through YOLOv8 for person detection, Detectron2 for DensePose map generation, and a human parsing network for segmentation masks. Results are organized into a structured directory hierarchy.
+
+    \item \textbf{Cloth Preparation} — Garment front and back images are saved, resized, and organized into the dataset structure expected by the inference model.
+
+    \item \textbf{Dataset Construction} — Person preprocessing outputs and cloth images are assembled into a ZIP archive following the model's expected directory format, ready for upload.
+
+    \item \textbf{Remote Inference} — The ZIP is uploaded to the inference server. The service polls for job completion with configurable timeouts.
+
+    \item \textbf{Result Retrieval} — Completed results are downloaded, extracted, and made available through the API. The multiview outputs can optionally be fed into the Splatfacto 3D Gaussian splatting pipeline for 360-degree interactive reconstruction.
+\end{enumerate}
+
+\subsection{Measurement Pipeline Design}
+The measurement pipeline transforms a single front-facing photograph into body measurements and size recommendations through the following stages:
+
+\begin{enumerate}[leftmargin=*]
+    \item \textbf{Input Validation} — The router validates image format, file size, height (in cm), weight (in kg), and gender parameters.
+
+    \item \textbf{SHAPY Inference} — The image and metadata are sent to the SHAPY service, which performs SMPL-X body mesh regression and returns raw shape parameters and circumference estimates.
+
+    \item \textbf{Weight-Based Correction} — If the predicted body mass deviates significantly from the user-provided weight, the router applies a proportional correction factor to circumference measurements. This compensates for the inherent ambiguity of estimating depth information from a single 2D image.
+
+    \item \textbf{Derived Measurements} — Additional body dimensions (shoulder width, arm length, trouser length, thigh circumference) are computed from the corrected circumferences using ISO~7250 anthropometric ratios.
+
+    \item \textbf{Size Recommendation} — Chest and waist circumferences are mapped to regional size charts (EU, US, UK, IT, FR, DE) with configurable fit preferences (regular, slim, oversized). The fit preference applies a scaling factor: slim reduces the target circumference, oversized increases it.
+
+    \item \textbf{Confidence Scoring} — Each measurement receives a confidence score based on the quality of the input image, the magnitude of corrections applied, and the consistency between predicted and reported anthropometric data.
+\end{enumerate}
+
+\section{Chat Service (RAG) Design}
+
+\subsection{Pipeline Architecture}
+The RAG service implements a five-stage pipeline pattern where each stage is a composable module with a defined input/output contract:
+
+\begin{enumerate}[leftmargin=*]
+    \item \textbf{Message Classifier} — Categorizes incoming messages into one of five types: \textit{product\_search}, \textit{greeting}, \textit{follow\_up}, \textit{non\_fashion}, or \textit{clarification}. Non-search intents receive immediate responses without triggering the retrieval pipeline, reducing unnecessary computation.
+
+    \item \textbf{Intent Extractor} — For product search messages, extracts a structured query object containing: garment type, colors, budget range, sizes, brands, occasion, gender, style preferences, and any free-text description. The extraction uses a large language model with a constrained output schema.
+
+    \item \textbf{Product Retriever} — Executes a two-phase hybrid search:
+    \begin{itemize}[leftmargin=*]
+        \item \textit{Phase 1 (Metadata Filtering)}: Constructs a MongoDB query from the extracted intent attributes, applying filters on category, type, gender, brand, color, size, and price range.
+        \item \textit{Phase 2 (Semantic Ranking)}: Computes cosine similarity between the query embedding (generated by Sentence-BERT) and pre-computed product embeddings. Products below a configurable similarity threshold are discarded.
+    \end{itemize}
+
+    \item \textbf{Outfit Assembler} — Groups retrieved products into coherent outfit combinations. The assembler attempts to match complementary garment types (e.g., a top with a bottom) and applies diversity constraints to avoid recommending multiple similar items.
+
+    \item \textbf{Response Composer} — Generates a bilingual natural language response grounded in the retrieved products. The composer receives the outfit selections, the user's original query, conversation history, and user profile data (if available). It produces explanations for why each item was recommended, styling tips based on body type, and explicit disclaimers when no suitable products are found.
+\end{enumerate}
+
+\subsection{Conversation History}
+The service maintains per-user conversation history in an in-memory LRU (Least Recently Used) store. The store is keyed by \texttt{user\_id} (primary) or \texttt{session\_id} (fallback), with configurable limits: up to 5{,}000 distinct keys and 20 turns (user + assistant messages) per key. Older entries are evicted when limits are reached. This enables multi-turn conversations where the assistant can reference previous queries without requiring external storage.
+
+\subsection{Knowledge Base Integration}
+A fashion-specific knowledge base provides profile-aware styling guidance. The knowledge base contains rules indexed by body type, height range, and gender that map to recommended silhouettes, colors, and fit preferences. When the user's profile includes height, weight, and gender, the retriever consults the knowledge base to augment recommendations with personalized styling advice.
+
+\subsection{Embedding Strategy}
+Product embeddings are pre-computed using Sentence-BERT (\texttt{all-MiniLM-L6-v2}) over a concatenation of product name, description, brand, tags, styles, and occasion fields. Embeddings are stored alongside product documents in MongoDB. A dedicated admin endpoint (\texttt{POST /precompute-embeddings}) triggers bulk re-computation when the product catalog is updated.
+
+\section{API Design}
+
+The system exposes RESTful APIs following consistent design conventions:
+
+\subsection{Backend API Conventions}
+\begin{itemize}[leftmargin=*]
+    \item \textbf{URL Structure}: Resources follow a noun-based hierarchy (e.g., \texttt{/api/products}, \texttt{/api/orders/:id}, \texttt{/api/community/posts}).
+    \item \textbf{Authentication}: Protected endpoints require a \texttt{Bearer} token in the \texttt{Authorization} header. Public endpoints use the optional auth middleware.
+    \item \textbf{Response Format}: All responses follow a consistent JSON structure with \texttt{success} (boolean), \texttt{msg} (human-readable message), and \texttt{data} (payload) fields.
+    \item \textbf{Error Format}: Errors include \texttt{success: false}, a machine-readable \texttt{code} (e.g., \texttt{TOKEN\_EXPIRED}), and a descriptive \texttt{msg}.
+    \item \textbf{Pagination}: List endpoints support \texttt{page} and \texttt{limit} query parameters with default values.
+    \item \textbf{Validation}: Request bodies are validated against Zod schemas before reaching controllers.
+\end{itemize}
+
+\subsection{Try-On Service API}
+The Try-On Service accepts multipart form data for image uploads. Key endpoints include:
+
+\begin{longtable}{p{3.5cm} p{2cm} p{8cm}}
+\toprule
+\textbf{Endpoint} & \textbf{Method} & \textbf{Description} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Endpoint} & \textbf{Method} & \textbf{Description} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+
+\texttt{/api/tryon/try-on} & POST & Submit person and garment images for 2D try-on using OOTDiffusion. \\
+\texttt{/api/multiangle/tryon} & POST & Single-view try-on with garment type, source mode, and placement controls. \\
+\texttt{/api/multiangle/multi} & POST & Multi-angle try-on across front, right, left, and back viewpoints. \\
+\texttt{/api/measurements/measure} & POST & Body measurement estimation from a front-facing photograph. \\
+\texttt{/api/vton360/preprocess} & POST & Preprocess person video/images for the multiview pipeline. \\
+\texttt{/api/vton360/upload-cloth} & POST & Upload garment front and back images. \\
+\texttt{/api/vton360/build-dataset} & POST & Assemble preprocessed data into inference-ready format. \\
+\texttt{/api/vton360/infer} & POST & Submit dataset for multiview inference. \\
+\texttt{/api/vton360/results} & GET & Retrieve completed inference results. \\
+\texttt{/api/health} & GET & Aggregated health status across all service clients. \\
+\end{longtable}
+
+\subsection{Chat Service API}
+\begin{longtable}{p{3.5cm} p{2cm} p{8cm}}
+\toprule
+\textbf{Endpoint} & \textbf{Method} & \textbf{Description} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Endpoint} & \textbf{Method} & \textbf{Description} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+
+\texttt{/chat} & POST & Send a natural language message through the RAG pipeline. Accepts \texttt{message}, \texttt{userId}, \texttt{sessionId}, and \texttt{lang}. \\
+\texttt{/health} & GET & Service health check with uptime reporting. \\
+\texttt{/precompute-embeddings} & POST & Admin utility to re-compute all product embeddings. \\
+\end{longtable}
+
+\section{Security and Privacy Design}
+
+\subsection{Authentication Flow}
+The system implements a dual-token authentication strategy:
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Access Token} — A short-lived JWT (configurable TTL, typically 15 minutes) containing \texttt{userId} and \texttt{tokenVersion}. Sent in the \texttt{Authorization: Bearer} header.
+    \item \textbf{Refresh Token} — A longer-lived JWT stored as an HTTP-only cookie. Used to silently rotate access tokens when they expire.
+    \item \textbf{Token Versioning} — Each user has a \texttt{tokenVersion} counter. Changing the password or performing a forced logout increments this version, immediately invalidating all existing tokens.
+\end{itemize}
+
+\subsection{Password Security}
+Passwords are hashed using \textbf{bcrypt} with a configurable salt rounds parameter before storage. Raw passwords are never persisted or logged. The password field is excluded from all database queries by default using Mongoose's \texttt{select: false} option.
+
+\subsection{Rate Limiting}
+Two tiers of rate limiting protect the system:
+\begin{itemize}[leftmargin=*]
+    \item \textbf{General API rate limiter} — Applied to all endpoints with a generous window to prevent abuse while allowing normal usage patterns.
+    \item \textbf{Authentication rate limiter} — Stricter limits on login, signup, and password reset endpoints to mitigate brute-force attacks. A separate \textbf{password reset rate limiter} is applied to the forgot-password, verify-code, and reset-password flow.
+\end{itemize}
+
+\subsection{Input Validation and Sanitization}
+All user inputs are validated at two levels:
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Schema validation} (Zod) — Ensures type safety, required fields, string length limits, and format constraints (e.g., email format, phone number patterns).
+    \item \textbf{Content moderation} — A profanity guard middleware scans user-generated text content before it reaches the database.
+\end{itemize}
+
+\subsection{Data Privacy}
+Uploaded images for try-on and body measurements are processed in-memory where possible and stored in Cloudinary with access-controlled URLs. Try-on results are associated with authenticated user accounts, ensuring that results are only accessible to the user who generated them. The body measurement pipeline does not retain raw images beyond the inference session unless explicitly saved by the user.
+
+\section{Deployment Architecture}
+
+The system is designed for deployment across multiple environments:
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Frontend} — Deployed as a containerized Next.js application behind a reverse proxy (Nginx or Vercel). Static assets are served from a CDN.
+
+    \item \textbf{Backend} — Runs as a Node.js process with PM2 for process management and automatic restarts. Connects to a managed MongoDB Atlas cluster.
+
+    \item \textbf{Try-On Service} — Runs as a Uvicorn ASGI server. GPU-intensive inference (OOTDiffusion, VTON360) is offloaded to remote Colab or dedicated GPU servers accessed via HTTP. The local service handles preprocessing, orchestration, and result delivery.
+
+    \item \textbf{Chat Service} — Runs as a Uvicorn ASGI server. The Sentence-BERT embedding model runs locally on CPU. LLM inference is delegated to an external API endpoint.
+
+    \item \textbf{Database} — MongoDB Atlas provides the primary data store with automated backups, replica sets for high availability, and Atlas Search for text indexing.
+
+    \item \textbf{Media Storage} — Cloudinary serves as the cloud media storage provider for product images, profile photos, try-on results, and community post images.
+\end{itemize}
+
+\section{Summary}
+This chapter has presented the system design for \projectname, covering the service-oriented architecture, the internal design of each service (frontend routing and i18n, backend module pattern and middleware pipeline, try-on multi-stage pipelines, and RAG pipeline stages), the API contracts, the security architecture, and the deployment topology. These design decisions directly implement the requirements defined in Chapter~3 and provide the blueprint for the implementation described in Chapter~5.

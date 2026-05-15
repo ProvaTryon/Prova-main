@@ -1,0 +1,118 @@
+\chapter{Introduction}
+
+\section{Background and Motivation}
+The global fashion e-commerce market has grown rapidly over the past decade, driven by increasing internet penetration, mobile commerce adoption, and shifting consumer preferences toward online shopping. However, this growth has been accompanied by persistently high product return rates, with clothing consistently ranking among the most returned categories in online retail. A significant portion of these returns stem from fit and appearance dissatisfaction—consumers receive garments that look different from what they expected based on static product photographs and generic size charts.
+
+Traditional product presentation in fashion e-commerce relies on a small set of studio photographs showing a garment on a single model or laid flat on a surface. These images provide limited information about how the garment would look on a specific consumer's body shape, skin tone, and proportions. Size charts, typically presented as static tables of numeric measurements, require consumers to measure themselves accurately and then mentally map those measurements to an unfamiliar sizing system. This process is error-prone even for experienced shoppers, and the problem is compounded by inconsistent sizing across brands and regions.
+
+At the same time, recent advances in computer vision and generative modeling have made several capabilities practically feasible that were previously confined to research prototypes. Diffusion-based image synthesis can now produce photorealistic garment transfers. 3D Gaussian splatting enables real-time novel view rendering from sparse image inputs. Body shape regression models can estimate anthropometric measurements from a single photograph. Dense retrieval systems powered by sentence embeddings can understand natural language shopping queries and match them against product catalogs. These technologies have individually reached sufficient maturity for integration into consumer-facing applications, but they are typically developed and deployed as isolated capabilities rather than components of a unified shopping experience.
+
+This gap between the maturity of individual AI components and the absence of integrated platforms that combine them into a coherent user experience motivates \projectname. The project aims to demonstrate that virtual try-on, body measurement, 360-degree visualization, and intelligent product discovery can be integrated into a single fashion e-commerce platform without requiring novel fundamental research in any individual area, but rather through careful systems design, service orchestration, and engineering.
+
+\section{Problem Definition}
+Online clothing purchases suffer from several interrelated challenges that collectively degrade the shopping experience and drive return rates:
+
+\textbf{Uncertainty about fit and appearance.} Consumers cannot physically try on garments before purchasing. Static product images show how a garment looks on a specific model under controlled studio conditions, but provide little insight into how the same garment would look on the consumer's own body. This uncertainty is particularly acute for garments where fit is critical, such as tailored shirts, dresses, and formal wear. The lack of personalized visualization forces consumers to make purchasing decisions based on incomplete information.
+
+\textbf{Difficulty choosing sizes.} Size charts vary significantly across brands, regions, and garment categories. A consumer who wears size M in one brand may need size L in another. Converting between regional sizing systems (EU, US, UK) adds further confusion. Without reliable measurement-based guidance, consumers frequently order multiple sizes of the same garment with the intention of returning those that do not fit, increasing logistical costs and environmental waste.
+
+\textbf{Limited personalization and discovery.} Large product catalogs contain hundreds or thousands of items, making it difficult for consumers to find garments that match their preferences, body type, occasion, and budget. Traditional keyword-based search requires consumers to know exact product terminology, and basic category filters provide only coarse-grained navigation. Consumers seeking outfit recommendations or style guidance for specific occasions receive no intelligent assistance from conventional e-commerce interfaces.
+
+\textbf{Fragmented user experiences.} Fashion shopping involves multiple activities beyond product search and purchase: seeking style inspiration, discussing trends with peers, exploring designer collections, and receiving personalized recommendations. In most existing platforms, these activities are distributed across separate applications and websites, creating a fragmented experience that reduces engagement and makes it difficult for consumers to move seamlessly between discovery, visualization, and purchase.
+
+\textbf{Absence of intelligent assistance.} Existing chatbot and search interfaces in fashion e-commerce typically rely on keyword matching or rigid decision trees. They cannot understand nuanced natural language queries such as ``a casual summer outfit for a beach wedding under 200 dollars'' or provide contextual recommendations that account for the consumer's body measurements, style preferences, and available inventory.
+
+Any proposed solution must address these challenges while operating under practical constraints: variable input image quality from consumer devices, acceptable response times for interactive use, support for diverse body types and garment categories, and a modular architecture that allows individual components to evolve independently as underlying models improve.
+
+\section{Problem Solution}
+\projectname\ addresses these challenges through a modular platform architecture that combines a web frontend, a backend API, and specialized AI services into a cohesive shopping experience. Rather than building a monolithic application, the system is decomposed into independently deployable services that communicate through well-defined APIs, enabling each component to be developed, tested, and scaled independently.
+
+The \textbf{frontend} delivers a bilingual (Arabic and English) web-based e-commerce interface built with Next.js. It provides the full shopping workflow: product browsing with filtering and search, detailed product pages, shopping cart and checkout, order management, and wishlists. Beyond core e-commerce, the frontend includes community spaces where users can share posts and engage with other shoppers, designer pages that showcase curated collections, and an interactive virtual try-on interface where users upload their photographs and visualize garments on their own body.
+
+The \textbf{backend} serves as the central orchestration layer, managing authentication and authorization, product and merchant management, order processing, community content moderation, and coordination with AI services. It exposes RESTful APIs consumed by the frontend and handles the routing of AI requests to the appropriate specialized service.
+
+The \textbf{try-on service} provides multiple AI capabilities through a FastAPI application. The 2D virtual try-on pipeline uses OOTDiffusion, a diffusion-based model that fuses garment appearance into person images without explicit geometric warping. A multiview extension generates try-on results from multiple viewpoints, enabling consumers to see how a garment looks from the front, sides, and back. The preprocessing pipeline uses DensePose for dense body surface estimation and human parsing for semantic segmentation of clothing regions, providing the conditioning inputs required by the try-on model. A body measurement module uses SHAPY, a 3D body mesh regression model, to estimate anthropometric measurements from a single front-facing photograph. These measurements are mapped to size recommendations using regional size charts and anthropometric ratios. A 360-degree reconstruction module uses Gaussian splatting (Splatfacto) to generate interactive 360-degree previews from multiview try-on outputs.
+
+The \textbf{retrieval and recommendation service} provides intelligent product discovery through a retrieval-augmented generation (RAG) pipeline. The system classifies user intent, extracts structured query attributes (garment type, color, budget, occasion, size) from natural language messages, retrieves candidate products through hybrid search combining MongoDB metadata filters with Sentence-BERT semantic ranking, assembles complete outfit recommendations, and generates bilingual natural language responses grounded in actual catalog data. A knowledge base provides profile-specific styling guidance based on the user's body measurements and preferences.
+
+This separation of concerns ensures that improvements to any individual AI model—a better try-on model, a more accurate measurement estimator, a faster 3D reconstruction method—can be integrated without disrupting the rest of the platform.
+
+\section{Key Features}
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Integrated marketplace.} A full e-commerce platform with merchant storefronts, product listings with multi-image galleries, size and color selection, shopping cart, checkout, order tracking, reviews, and wishlists.
+
+    \item \textbf{Personalized item discovery.} A conversational AI assistant that understands natural language queries in Arabic and English, retrieves relevant products from the catalog using hybrid semantic and metadata search, and assembles complete outfit recommendations with explanations.
+
+    \item \textbf{Virtual try-on.} Diffusion-based garment transfer that generates realistic images of the user wearing selected garments. Supports single-view and multi-angle outputs to show the garment from multiple perspectives.
+
+    \item \textbf{Body measurement and size recommendation.} Automated measurement estimation from a single front-facing photograph using 3D body mesh regression, with calibration against user-provided height and weight. Measurements are mapped to regional size recommendations (EU, US, UK) with configurable fit preferences.
+
+    \item \textbf{360-degree visual previews.} Interactive 360-degree views generated from multiview try-on outputs using Gaussian splatting, enabling users to freely rotate the visualized result.
+
+    \item \textbf{Community and designer spaces.} Social features including user posts, design showcases, comments, votes, and follow relationships, creating engagement beyond transactional shopping.
+
+    \item \textbf{Bilingual support.} Full Arabic and English localization across the frontend interface and the AI assistant, with locale-based routing and right-to-left layout support.
+\end{itemize}
+
+\section{Project Contributions}
+This project makes the following contributions:
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{An integrated AI-driven fashion platform.} The primary contribution is the integration of multiple AI capabilities—virtual try-on, body measurement, 360 visualization, and retrieval-augmented discovery—into a single, functional e-commerce platform. This demonstrates the feasibility of unifying research-grade AI components into a production-oriented application.
+
+    \item \textbf{A modular service architecture for AI orchestration.} The system demonstrates a practical architecture for coordinating heterogeneous AI services (diffusion models, 3D reconstruction, embedding-based retrieval, body mesh regression) through a unified API layer, with health monitoring, error handling, and analytics across all services.
+
+    \item \textbf{A preprocessing and conditioning pipeline.} The project implements a complete preprocessing workflow that transforms raw user inputs (photographs, videos) into the structured conditioning data (DensePose maps, parsing masks, camera intrinsics) required by downstream AI models.
+
+    \item \textbf{A hybrid retrieval pipeline for fashion discovery.} The RAG system combines structured metadata filtering with dense semantic ranking, intent classification, outfit assembly, and profile-aware knowledge base guidance, creating a retrieval pipeline specifically designed for fashion product catalogs.
+
+    \item \textbf{A measurement-to-size recommendation pipeline.} The system chains 3D body mesh regression with anthropometric ratio estimation and multi-region size chart lookup, providing end-to-end measurement and sizing from a single photograph.
+\end{itemize}
+
+\section{Scope and Limitations}
+
+\subsection{In Scope}
+This project encompasses the following:
+\begin{itemize}[leftmargin=*]
+    \item A complete web-based e-commerce platform with marketplace, community, and designer features.
+    \item A 2D virtual try-on pipeline using diffusion-based synthesis (OOTDiffusion) with single-view and multi-angle support.
+    \item A preprocessing pipeline using DensePose and human parsing for body surface estimation.
+    \item Body measurement estimation using SHAPY 3D mesh regression with size chart mapping.
+    \item A 360-degree reconstruction pipeline using Gaussian splatting (Splatfacto).
+    \item A retrieval-augmented discovery system with hybrid search, intent classification, and bilingual support.
+    \item A multiview virtual try-on workflow inspired by the VTON360 research pipeline.
+\end{itemize}
+
+\subsection{Out of Scope}
+The following areas are explicitly excluded:
+\begin{itemize}[leftmargin=*]
+    \item Physics-based cloth simulation and draping.
+    \item Training or fine-tuning of foundational generative models from scratch.
+    \item Payment gateway integration and real financial transactions.
+    \item Mobile native applications (the platform is web-based only).
+    \item Large-scale production deployment with load balancing and CDN infrastructure.
+\end{itemize}
+
+\subsection{Known Limitations}
+The current implementation has several known limitations:
+\begin{itemize}[leftmargin=*]
+    \item Real-time performance is achieved only for the 360 rendering component; other AI pipelines (try-on, measurement, RAG) operate at interactive but not real-time speeds, with inference times ranging from seconds to tens of seconds depending on the model and hardware.
+    \item Try-on quality depends on input image quality, pose, and lighting conditions. Results degrade for heavily occluded poses, low-resolution inputs, or unusual camera angles.
+    \item Body measurement accuracy is limited by the inherent ambiguity of monocular depth estimation and is affected by clothing, pose, and camera perspective.
+    \item The system relies on external model checkpoints and pretrained weights; it does not include novel model architectures or training procedures.
+\end{itemize}
+
+\section{Thesis Organization}
+The remainder of this thesis is organized as follows:
+
+\textbf{Chapter 2: Literature Review} reviews related work in image-based virtual try-on, multiview try-on, generative models, 3D reconstruction, human body understanding, body measurement estimation, and retrieval-augmented discovery for fashion e-commerce. The chapter traces the evolution of methods in each area and identifies the gaps that motivate an integrated platform.
+
+\textbf{Chapter 3: System Analysis} presents the system requirements, stakeholder analysis, and modeling artifacts including use case diagrams, entity-relationship diagrams, class diagrams, and sequence diagrams that define the scope and structure of the system.
+
+\textbf{Chapter 4: Proposed System Design} describes the system architecture, component design, data flow, algorithmic stages, and the models and technologies selected for each subsystem.
+
+\textbf{Chapter 5: Implementation} details the implementation of each service, including backend API structure, frontend interface, try-on pipeline, measurement module, 360 reconstruction, and RAG system. It also presents the datasets used for evaluation and the quantitative and qualitative results.
+
+\textbf{Chapter 6: Testing} describes the testing methodology, including unit tests, integration tests, performance measurements, and user evaluation sessions.
+
+\textbf{Chapter 7: Conclusion and Future Work} summarizes the project outcomes, discusses lessons learned, and outlines directions for future improvement.

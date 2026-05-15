@@ -1,0 +1,42 @@
+# LaTeX build artifacts
+*.aux
+*.auxlock
+*.bbl
+*.bcf
+*.blg
+*.brf
+*.fdb_latexmk
+*.fls
+*.glg
+*.glo
+*.gls
+*.idx
+*.ilg
+*.ind
+*.ist
+*.lof
+*.log
+*.lot
+*.lol
+*.nav
+*.nlo
+*.nls
+*.out
+*.run.xml
+*.slo
+*.sls
+*.snm
+*.synctex.gz
+*.thm
+*.toc
+*.vrb
+*.xmpdata
+*.xdv
+
+# Intermediate output formats
+*.dvi
+*.ps
+*.eps
+
+# Minted cache
+_minted*

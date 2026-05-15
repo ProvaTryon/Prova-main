@@ -1,0 +1,28 @@
+\chapter{Implementation}
+
+\section{Overview}
+This chapter describes how \projectname\ is implemented across the frontend, backend, and AI services. It also documents the models, datasets, and results that validate the marketplace, RAG retrieval, multiview 2D try-on, measurement estimation, and 360 view features.
+
+\section{Backend Implementation}
+The backend is written in TypeScript using Express. It provides REST endpoints for authentication, product and order management, community content, and proxying AI requests. Validation is performed using schema-based checks, and MongoDB is used for persistence.
+
+\section{Frontend Implementation}
+The frontend uses Next.js with the App Router. It integrates localization, UI components, and interactive workflows for marketplace browsing, community engagement, designer pages, and 2D try-on.
+
+\section{Try-On Service Implementation}
+The FastAPI try-on service exposes endpoints for the custom multiview 2D try-on pipeline. The implementation follows the same high-level stages described in the VTON360 research paper, including preprocessing, conditioning, synthesis, and post-processing. A splatfacto-based module uses multiview outputs to reconstruct a full 360 view.
+
+\section{Body Measurement Implementation}
+The measurement module estimates key body measurements from images and maps them to size recommendations. This section will detail the measurement pipeline, inputs, outputs, and the sizing rules used by the system.
+
+\section{RAG System Implementation}
+The retrieval system ingests product data into a vector store and performs semantic search to surface relevant items. It is integrated into the marketplace experience to support discovery and recommendation flows.
+
+\section{Models and Equations}
+This section will detail the models used in the system and the key equations involved in try-on conditioning, measurement estimation, 360 reconstruction, and retrieval scoring.
+
+\section{Datasets}
+This section will document datasets used for evaluation, including sources, sizes, preprocessing steps, and splits.
+
+\section{Results}
+This section will present quantitative metrics, qualitative results, and sample outputs for each subsystem.

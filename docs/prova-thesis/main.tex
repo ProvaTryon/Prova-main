@@ -1,0 +1,73 @@
+\documentclass[12pt,a4paper,oneside]{report}
+
+\usepackage[a4paper,margin=1in]{geometry}
+\usepackage{setspace}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage[hidelinks]{hyperref}
+\usepackage[backend=biber,style=ieee]{biblatex}
+
+\addbibresource{references.bib}
+
+\newcommand{\projectname}{Prova}
+\newcommand{\thesistitle}{\projectname: Virtual Try-On and AI Shopping Assistant for Fashion E-commerce}
+\newcommand{\authorname}{YOUR NAME}
+\newcommand{\universityname}{YOUR UNIVERSITY}
+\newcommand{\facultyname}{YOUR FACULTY OR COLLEGE}
+\newcommand{\departmentname}{YOUR DEPARTMENT}
+\newcommand{\degree}{Bachelor Graduation Project}
+\newcommand{\submissiondate}{May 2026}
+
+\begin{document}
+
+\begin{titlepage}
+    \centering
+    \vspace*{2cm}
+    {\Huge\bfseries \thesistitle \par}
+    \vspace{1.5cm}
+    {\Large \authorname \par}
+    \vspace{1.5cm}
+    {\large \universityname \par}
+    {\large \facultyname \par}
+    {\large \departmentname \par}
+    \vfill
+    {\large \degree \par}
+    {\large \submissiondate \par}
+\end{titlepage}
+
+\pagenumbering{roman}
+\onehalfspacing
+
+\chapter*{Abstract}
+\addcontentsline{toc}{chapter}{Abstract}
+Write a concise abstract describing the motivation, methods, and outcomes of \projectname. Keep it to about 200 to 300 words.
+
+\chapter*{Acknowledgements}
+\addcontentsline{toc}{chapter}{Acknowledgements}
+Optional. Acknowledge supervisors, colleagues, and family.
+
+\tableofcontents
+\listoffigures
+\listoftables
+\clearpage
+\pagenumbering{arabic}
+
+\include{chapters/01-introduction}
+\include{chapters/02-literature-review}
+\include{chapters/03-system-analysis}
+\include{chapters/04-system-design}
+\include{chapters/05-implementation}
+\include{chapters/06-testing}
+\include{chapters/07-conclusion}
+
+\printbibliography
+
+\end{document}
