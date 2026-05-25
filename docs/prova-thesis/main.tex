@@ -12,17 +12,43 @@
 \usepackage{subcaption}
 \usepackage{enumitem}
 \usepackage{xcolor}
-\usepackage[hidelinks]{hyperref}
+\definecolor{provablue}{RGB}{28, 69, 135}
+\definecolor{provalight}{RGB}{235, 243, 250}
+
+\usepackage[T1]{fontenc}
+\usepackage{mathpazo} % Palatino font for a beautiful academic look
+\usepackage{microtype} % Improves text justification
+\usepackage{parskip} % Modern paragraph spacing instead of indentation
+
+\usepackage{titlesec}
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning}
+\titleformat{\chapter}[display]
+  {\normalfont\Huge\bfseries\color{provablue}}{\chaptertitlename\ \thechapter}{20pt}{\Huge}[\vspace{1ex}\color{provablue}\titlerule]
+\titleformat{\section}
+  {\normalfont\Large\bfseries\color{provablue}}{\thesection}{1em}{}
+\titleformat{\subsection}
+  {\normalfont\large\bfseries\color{provablue}}{\thesubsection}{1em}{}
+
+\usepackage{fancyhdr}
+\setlength{\headheight}{25pt}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\textcolor{provablue}{\slshape\leftmark}}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\headrule}{\hbox to\headwidth{\color{provablue}\leaders\hrule height \headrulewidth\hfill}}
+
+\usepackage[colorlinks=true, linkcolor=provablue, citecolor=provablue, urlcolor=provablue]{hyperref}
 \usepackage[backend=biber,style=ieee]{biblatex}
 
 \addbibresource{references.bib}
 
 \newcommand{\projectname}{Prova}
 \newcommand{\thesistitle}{\projectname: Virtual Try-On and AI Shopping Assistant for Fashion E-commerce}
-\newcommand{\authorname}{YOUR NAME}
-\newcommand{\universityname}{YOUR UNIVERSITY}
-\newcommand{\facultyname}{YOUR FACULTY OR COLLEGE}
-\newcommand{\departmentname}{YOUR DEPARTMENT}
+\newcommand{\universityname}{Modern Academy}
+\newcommand{\facultyname}{Faculty of Computer Science}
+\newcommand{\departmentname}{Computer Science Department}
 \newcommand{\degree}{Bachelor Graduation Project}
 \newcommand{\submissiondate}{May 2026}
 
@@ -30,15 +56,43 @@
 
 \begin{titlepage}
     \centering
-    \vspace*{2cm}
-    {\Huge\bfseries \thesistitle \par}
-    \vspace{1.5cm}
-    {\Large \authorname \par}
-    \vspace{1.5cm}
-    {\large \universityname \par}
-    {\large \facultyname \par}
+    
+    % University Logo
+    \includegraphics[width=0.25\textwidth]{figures/university-logo.png}\par\vspace{0.5cm}
+    
+    {\scshape\LARGE \universityname \par}
+    \vspace{0.3cm}
+    {\scshape\Large \facultyname \par}
     {\large \departmentname \par}
+    
+    \vspace{1cm}
+    
+    {\Huge\bfseries \thesistitle \par}
+    
+    \vspace{1cm}
+    
+    {\Large\itshape Submitted by:\par}
+    \vspace{0.3cm}
+    {\Large 
+        Amro Rabea\\
+        Yousef Ayman\\
+        Seif Ezz Eldin\\
+        Seif Eldin Mohamed\\
+        Ahmed Mamdouh\par
+    }
+    
+    \vspace{1cm}
+    
+    {\Large\itshape Supervised by:\par}
+    \vspace{0.2cm}
+    {\Large Dr. Ahmed Ibrahim\par}
+    \vspace{0.4cm}
+    {\Large\itshape Teaching Assistant:\par}
+    \vspace{0.2cm}
+    {\Large Eng. Alaa Abouelela\par}
+    
     \vfill
+    
     {\large \degree \par}
     {\large \submissiondate \par}
 \end{titlepage}
@@ -48,11 +102,15 @@
 
 \chapter*{Abstract}
 \addcontentsline{toc}{chapter}{Abstract}
-Write a concise abstract describing the motivation, methods, and outcomes of \projectname. Keep it to about 200 to 300 words.
+The rapid growth of fashion e-commerce is hindered by the inability of consumers to physically try on garments, leading to high return rates and poor user satisfaction. This thesis presents \projectname, an AI-powered fashion e-commerce platform designed to bridge the gap between digital browsing and physical retail. \projectname\ integrates advanced deep learning models to offer a comprehensive suite of features: high-fidelity 2D and multi-angle virtual try-on utilizing Prova-VTON (a custom diffusion model trained on the MVHumanNet dataset) and specialized garment heuristics, 360-degree interactive video previews, and an intelligent body measurement extraction pipeline powered by the SHAPY 3D mesh regressor with a novel weight-based correction algorithm. Furthermore, the platform introduces a Retrieval-Augmented Generation (RAG) conversational fashion assistant that interprets complex user intents to provide personalized, inventory-grounded styling recommendations. Built on a robust microservice architecture using Next.js, Express, and FastAPI, the system demonstrates the successful orchestration of heavy AI inference workloads within a responsive, bilingual (English/Arabic) web application. Rigorous testing validates the system's architectural scalability, inference performance, and usability, proving its viability as a next-generation shopping experience.
 
 \chapter*{Acknowledgements}
 \addcontentsline{toc}{chapter}{Acknowledgements}
-Optional. Acknowledge supervisors, colleagues, and family.
+First and foremost, we would like to express our sincere gratitude to our supervisor, Dr. Ahmed Ibrahim, for his invaluable guidance, continuous support, and profound knowledge throughout the development of this graduation project. His insights and feedback were instrumental in shaping the technical direction of \projectname. 
+
+We also extend our deepest appreciation to our Teaching Assistant, Eng. Alaa Abouelela, for her patience, practical advice, and dedication in helping us navigate and overcome complex technical challenges during the implementation phase. 
+
+Finally, we would like to thank our families and friends for their unwavering encouragement, patience, and support throughout our entire academic journey at Modern Academy.
 
 \tableofcontents
 \listoffigures

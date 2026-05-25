@@ -1,7 +1,35 @@
 \chapter{Conclusion and Future Work}
 
 \section{Conclusion}
-This project delivers an integrated platform that combines virtual try-on, measurement estimation, and conversational assistance for fashion e-commerce. The modular architecture enables flexible deployment and sets a foundation for future improvements.
+\label{sec:conclusion}
+
+The rapid growth of e-commerce has fundamentally changed how consumers shop for fashion, yet the inability to try on clothes before purchasing remains a significant barrier, leading to low conversion rates, high return volumes, and environmental waste. This project, \projectname, addressed these challenges by developing a comprehensive, AI-powered fashion e-commerce platform that bridges the gap between online browsing and physical retail experiences.
+
+Through a modular, service-oriented architecture, we successfully integrated state-of-the-art generative AI and computer vision models into a cohesive user experience. The system delivers three core technological achievements:
+
+\begin{enumerate}[leftmargin=*]
+    \item \textbf{Multi-Pipeline Virtual Try-On.} The platform goes beyond basic 2D image synthesis by implementing a robust multi-pipeline architecture. It integrates Prova-VTON (our custom MVHumanNet-trained model) for high-fidelity 2D try-on, a multimodal generative approach for multi-angle synthesis (front, back, left, right), and a complex multiview workflow (Prova-VTON) that reconstructs 360-degree interactive previews using 3D Gaussian splatting. The implementation of automated garment analysis heuristics (transparency and skin-tone detection) ensures reliable performance across diverse input images.
+
+    \item \textbf{Intelligent Size Recommendation.} By leveraging the SHAPY 3D body mesh regression model, the system successfully extracts body circumferences from a single front-facing photograph. The novel implementation of a weight-based correction factor significantly mitigates the depth ambiguity inherent in single-image 3D reconstruction. The derived measurements are accurately mapped to a multi-region size recommendation engine, providing shoppers with confidence in their sizing choices and merchants with a tool to reduce fit-related returns.
+
+    \item \textbf{Retrieval-Augmented Fashion Assistant.} The RAG-powered chatbot transforms traditional keyword search into a conversational styling experience. The five-stage pipeline successfully extracts complex, multi-dimensional intents from natural language and performs hybrid retrieval against the product catalog. The outfit assembler demonstrates the ability to reason about fashion rules—matching colors, occasions, seasons, and budgets—to construct coherent, personalized looks grounded in real inventory.
+\end{enumerate}
+
+Furthermore, the platform provides a complete e-commerce ecosystem, including bilingual localization, comprehensive merchant dashboards, a community hub for designers and shoppers, and robust role-based access control. The successful testing and evaluation of the system confirm that it meets both its functional requirements and performance targets, proving the viability of integrating heavy AI workloads into responsive web applications.
+
+\projectname\ demonstrates that combining advanced visual synthesis with conversational AI can create a highly engaging, personalized, and confidence-inspiring online fashion shopping experience.
 
 \section{Future Work}
-Future enhancements include higher-fidelity try-on models, improved multi-view consistency, tighter latency guarantees, and richer personalization using user feedback and analytics.
+\label{sec:future-work}
+
+While \projectname\ achieves its core objectives, several avenues for future enhancement have been identified:
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Real-Time Inference Optimization.} The latency of the virtual try-on pipelines, particularly the multiview Prova-VTON process, remains a bottleneck for real-time interaction. Future work should explore model quantization, TensorRT optimization, and edge-computing architectures to reduce inference times.
+    \item \textbf{Video-to-Video Try-On.} Extending the synthesis capabilities from static images to continuous video would allow users to see how garments move and drape dynamically.
+    \item \textbf{Enhanced Personalization.} The RAG assistant currently uses a static knowledge base. Implementing a reinforcement learning from human feedback (RLHF) loop, utilizing user interactions (likes, purchases, returns), would allow the assistant to continuously learn and adapt to individual styling preferences.
+    \item \textbf{AR Integration.} Integrating the 3D Gaussian splatting outputs with WebXR would enable augmented reality experiences, allowing users to project 3D garments or avatars into their physical environment using mobile devices.
+    \item \textbf{Expanded Fabric Physics.} Improving the try-on models' understanding of fabric properties (e.g., stiffness, weight, stretch) would enhance the realism of the synthesized images, particularly for complex materials like silk or heavy wool.
+\end{itemize}
+
+By continuing to advance these capabilities, the platform can further narrow the gap between digital convenience and the tactile assurance of physical retail.

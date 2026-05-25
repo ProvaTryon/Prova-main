@@ -130,7 +130,7 @@ This section describes the primary use cases that define user interactions with 
 \begin{figure}[H]
     \centering
     % \includegraphics[width=\textwidth]{figures/use-case-diagram.png}
-    \fbox{\parbox{0.9\textwidth}{\centering\vspace{3cm}\textit{Use Case Diagram — to be inserted}\vspace{3cm}}}
+    \includegraphics[width=0.9\textwidth]{figures/usecase.png}
     \caption{Use case diagram for \projectname.}
     \label{fig:usecase}
 \end{figure}
@@ -249,7 +249,7 @@ The system uses MongoDB as its primary data store. While MongoDB is a document-o
 \begin{figure}[H]
     \centering
     % \includegraphics[width=\textwidth]{figures/erd.png}
-    \fbox{\parbox{0.9\textwidth}{\centering\vspace{4cm}\textit{Entity-Relationship Diagram — to be inserted}\vspace{4cm}}}
+    \includegraphics[width=\textwidth]{figures/erd.png}
     \caption{Entity-relationship diagram for \projectname.}
     \label{fig:erd}
 \end{figure}
@@ -266,7 +266,7 @@ The system uses MongoDB as its primary data store. While MongoDB is a document-o
 
 \textbf{Review.} A product review containing user reference, product reference, rating (0.5--5), comment text, likes (array of user references), and threaded replies.
 
-\textbf{TryOnResult.} Records a virtual try-on session. Contains user and product references, model type (vton2d/vton360/multiangle), result image URL and public ID, video generation status and metadata, garment category, and timestamps.
+\textbf{TryOnResult.} Records a virtual try-on session. Contains user and product references, model type (vton2d/prova-vton/multiangle), result image URL and public ID, video generation status and metadata, garment category, and timestamps.
 
 \textbf{BodyMeasurements.} Stores measurement estimation results. Contains user reference, engine used (shapy), source image URLs, input metadata (height, weight, gender, region, fit), the full measurements object, size recommendation, confidence scores, debug information, and processing time.
 
@@ -308,14 +308,14 @@ The class diagram illustrates the major software components and their relationsh
 \begin{figure}[H]
     \centering
     % \includegraphics[width=\textwidth]{figures/class-diagram.png}
-    \fbox{\parbox{0.9\textwidth}{\centering\vspace{4cm}\textit{Class Diagram — to be inserted}\vspace{4cm}}}
+    \includegraphics[width=\textwidth]{figures/classdiagram.png}
     \caption{Class diagram showing major components of \projectname.}
     \label{fig:classdiagram}
 \end{figure}
 
 The backend follows a layered module pattern. Each domain module (auth, product, order, post, etc.) contains four components: a \textbf{Routes} file that defines HTTP endpoints and attaches middleware, a \textbf{Controller} that handles request parsing and response formatting, a \textbf{Service} that implements business logic, and a \textbf{Model} that defines the Mongoose schema and database interface. Validation is handled by \textbf{Schema} files using Zod. Cross-cutting concerns—authentication, rate limiting, CORS, security headers, logging, and error handling—are implemented as Express middleware.
 
-The try-on service follows a similar layered pattern using FastAPI. \textbf{Routers} define API endpoints, \textbf{Services} (ColabClient, MultiAngleClient, VTON360Client, SHAPYClient, VideoPreprocessor) implement the AI pipeline logic, and \textbf{Models} define request/response schemas using Pydantic. A \textbf{Dependencies} module provides dependency injection for service instances, and a centralized \textbf{ClientState} singleton manages the lifecycle of all external service clients.
+The try-on service follows a similar layered pattern using FastAPI. \textbf{Routers} define API endpoints, \textbf{Services} (ColabClient, MultiAngleClient, MultiviewClient, SHAPYClient, VideoPreprocessor) implement the AI pipeline logic, and \textbf{Models} define request/response schemas using Pydantic. A \textbf{Dependencies} module provides dependency injection for service instances, and a centralized \textbf{ClientState} singleton manages the lifecycle of all external service clients.
 
 The RAG service is organized as a pipeline of composable stages: MessageClassifier, IntentExtractor, ProductRetriever, OutfitAssembler, and ResponseComposer, coordinated by a Pipeline orchestrator. Configuration, embeddings, prompts, and schemas are separated into dedicated modules.
 
@@ -327,7 +327,7 @@ This section documents the key processes in the system using sequence diagrams t
 \begin{figure}[H]
     \centering
     % \includegraphics[width=\textwidth]{figures/seq-purchase.png}
-    \fbox{\parbox{0.9\textwidth}{\centering\vspace{3cm}\textit{Purchase Sequence Diagram — to be inserted}\vspace{3cm}}}
+    \includegraphics[width=0.9\textwidth]{figures/seq-purchase.png}
     \caption{Sequence diagram for the product purchase flow.}
     \label{fig:seq-purchase}
 \end{figure}
@@ -338,18 +338,18 @@ The purchase flow proceeds as follows: (1) the shopper adds items to their cart 
 \begin{figure}[H]
     \centering
     % \includegraphics[width=\textwidth]{figures/seq-tryon.png}
-    \fbox{\parbox{0.9\textwidth}{\centering\vspace{3cm}\textit{Try-On Sequence Diagram — to be inserted}\vspace{3cm}}}
+    \includegraphics[width=0.9\textwidth]{figures/seq-tryon.png}
     \caption{Sequence diagram for the 2D virtual try-on flow.}
     \label{fig:seq-tryon}
 \end{figure}
 
-The 2D try-on flow involves three services: (1) the frontend uploads person and garment images to the backend, (2) the backend proxies the request to the try-on FastAPI service, (3) the try-on service validates and preprocesses both images, (4) the service sends the images to the diffusion model (OOTDiffusion) for synthesis, (5) the result image is returned to the backend, (6) the backend uploads the result to cloud storage (Cloudinary), saves a TryOnResult document, and returns the image URL to the frontend.
+The 2D try-on flow involves three services: (1) the frontend uploads person and garment images to the backend, (2) the backend proxies the request to the try-on FastAPI service, (3) the try-on service validates and preprocesses both images, (4) the service sends the images to the custom trained diffusion model (Prova-VTON) for synthesis, (5) the result image is returned to the backend, (6) the backend uploads the result to cloud storage (Cloudinary), saves a TryOnResult document, and returns the image URL to the frontend.
 
 \subsection{RAG Fashion Assistant Flow}
 \begin{figure}[H]
     \centering
     % \includegraphics[width=\textwidth]{figures/seq-rag.png}
-    \fbox{\parbox{0.9\textwidth}{\centering\vspace{3cm}\textit{RAG Sequence Diagram — to be inserted}\vspace{3cm}}}
+    \includegraphics[width=0.9\textwidth]{figures/seq-rag.png}
     \caption{Sequence diagram for the RAG fashion assistant pipeline.}
     \label{fig:seq-rag}
 \end{figure}
@@ -360,7 +360,7 @@ The RAG flow proceeds through five stages: (1) the frontend sends the user's nat
 \begin{figure}[H]
     \centering
     % \includegraphics[width=\textwidth]{figures/seq-measurement.png}
-    \fbox{\parbox{0.9\textwidth}{\centering\vspace{3cm}\textit{Measurement Sequence Diagram — to be inserted}\vspace{3cm}}}
+    \includegraphics[width=0.9\textwidth]{figures/seq-measurement.png}
     \caption{Sequence diagram for body measurement and size recommendation.}
     \label{fig:seq-measurement}
 \end{figure}

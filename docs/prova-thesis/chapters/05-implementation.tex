@@ -1,28 +1,361 @@
 \chapter{Implementation}
 
 \section{Overview}
-This chapter describes how \projectname\ is implemented across the frontend, backend, and AI services. It also documents the models, datasets, and results that validate the marketplace, RAG retrieval, multiview 2D try-on, measurement estimation, and 360 view features.
+This chapter presents the implementation details of \projectname, translating the design decisions described in Chapter~4 into working software. The chapter is organized by service: Section~\ref{sec:impl-env} describes the development environment and tools; Section~\ref{sec:impl-backend} covers the backend API implementation; Section~\ref{sec:impl-frontend} details the frontend application; Section~\ref{sec:impl-tryon} documents the try-on service including the multi-angle and multiview pipelines; Section~\ref{sec:impl-measurement} presents the body measurement pipeline; Section~\ref{sec:impl-rag} describes the RAG fashion assistant; and Section~\ref{sec:impl-360} covers the 360-degree reconstruction module. Code excerpts, configuration details, and implementation-specific decisions are provided throughout. Where applicable, figures illustrating the implemented interfaces are referenced.
+
+\section{Development Environment and Tools}
+\label{sec:impl-env}
+
+Table~\ref{tab:dev-tools} summarizes the primary technologies, frameworks, and libraries used across all four services.
+
+\begin{longtable}{p{3.5cm} p{3cm} p{7cm}}
+\toprule
+\textbf{Component} & \textbf{Technology} & \textbf{Purpose} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Component} & \textbf{Technology} & \textbf{Purpose} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+
+\multicolumn{3}{l}{\textbf{Backend Service}} \\
+\midrule
+Runtime & Node.js & Server-side JavaScript execution \\
+Language & TypeScript & Static typing for Express application \\
+Framework & Express 5 & HTTP routing and middleware pipeline \\
+Database & MongoDB 8 / Mongoose 8 & Document storage with schema enforcement \\
+Authentication & jsonwebtoken, bcryptjs & JWT issuance/verification and password hashing \\
+Validation & Zod 4 & Schema-based request validation \\
+Media Storage & Cloudinary & Cloud image hosting for products and results \\
+Image Processing & Sharp & Server-side image compression and resizing \\
+Rate Limiting & express-rate-limit & Tiered API rate limiting \\
+Security & Helmet & HTTP security headers \\
+Email & Nodemailer & OTP and notification emails \\
+Real-time & Socket.IO & WebSocket notifications \\
+\midrule
+\multicolumn{3}{l}{\textbf{Frontend Service}} \\
+\midrule
+Framework & Next.js 15 & React-based SSR/SSG with App Router \\
+Language & TypeScript & Type-safe component development \\
+Styling & Tailwind CSS 4 & Utility-first CSS framework \\
+UI Components & Radix UI & Accessible headless component primitives \\
+Animations & Framer Motion & Declarative motion and transitions \\
+Data Fetching & TanStack React Query & Server state management with caching \\
+Internationalization & next-intl & Locale-based routing and translations \\
+Forms & React Hook Form + Zod & Type-safe form handling with validation \\
+Charts & Recharts & Dashboard data visualization \\
+\midrule
+\multicolumn{3}{l}{\textbf{Try-On Service}} \\
+\midrule
+Framework & FastAPI & Async Python web framework \\
+HTTP Client & httpx & Async HTTP client for service communication \\
+Person Detection & YOLOv8 (Ultralytics) & Bounding box detection for person cropping \\
+Body Surface & Detectron2 + DensePose & Dense body surface correspondence maps \\
+Human Parsing & SCHP & Semantic segmentation of clothing regions \\
+Image Processing & Pillow, NumPy & Image manipulation and array operations \\
+3D Mesh Regression & SHAPY (SMPL-X) & Body measurement estimation from images \\
+\midrule
+\multicolumn{3}{l}{\textbf{Chat Service (RAG)}} \\
+\midrule
+Framework & FastAPI & Async Python web framework \\
+Database Driver & Motor (async) & Async MongoDB driver for product retrieval \\
+Embeddings & Sentence-BERT & Local text embedding (all-MiniLM-L6-v2) \\
+LLM Integration & OpenRouter API & Intent extraction and response generation \\
+\bottomrule
+\caption{Development tools and technologies used in \projectname.}
+\label{tab:dev-tools}
+\end{longtable}
+
+All services use environment variables for configuration, managed through \texttt{.env} files with corresponding \texttt{.env.example} templates. The project repository is organized as a monorepo with four top-level directories (\texttt{backend/}, \texttt{frontend/}, \texttt{tryon/}, \texttt{chat/}) and a shared \texttt{docs/} directory containing this thesis. Package management uses \texttt{pnpm} for Node.js services and \texttt{conda} environments for Python services.
 
 \section{Backend Implementation}
-The backend is written in TypeScript using Express. It provides REST endpoints for authentication, product and order management, community content, and proxying AI requests. Validation is performed using schema-based checks, and MongoDB is used for persistence.
+\label{sec:impl-backend}
+
+The backend is implemented as an Express 5 application written in TypeScript. It serves as the central orchestrator for all e-commerce operations, user management, community features, and AI service coordination.
+
+\subsection{Application Bootstrap and Middleware Stack}
+The application entry point (\texttt{src/app.ts}) initializes the Express instance and registers middleware in a strict security-first sequence. As designed in Chapter~4, this includes trust proxy configuration, HTTPS enforcement, Helmet security headers, CORS restrictions, rate limiting, and request parsing with a 10\,MB limit for image uploads.
+
+\subsection{Module Implementation}
+The backend contains 32 domain modules under \texttt{src/modules/}, grouped by domain (Authentication, E-Commerce, Community, AI Integration, and Support). Each module strictly adheres to the layered architecture (Routes, Controller, Service, Model) defined in Chapter~4.
+
+\subsection{Authentication and Authorization}
+The authentication module implements the dual-token strategy. The \texttt{auth} middleware intercepts every request, transparently issuing new access tokens via the \texttt{X-New-Access-Token} response header when a valid HTTP-only refresh cookie is present. Authenticated sessions are temporarily cached in a \texttt{node-cache} instance to reduce database load. Role-based access control is enforced via parameterized guard middleware on protected routes.
+
+\subsection{E-Commerce and Community Subsystems}
+Product search leverages MongoDB text indices combined with field-level filters to ensure sub-500ms response times. The order module implements atomic stock decrementation to prevent overselling. The community subsystem realizes the polymorphic content model for comments and votes, utilizing discriminator fields (\texttt{targetType}). All interactions trigger event-driven notifications governed by a 30-day MongoDB TTL index for automatic cleanup.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{figures/backend-api.png}
+    \caption{Backend API endpoint structure showing the modular route organization.}
+    \label{fig:backend-api}
+\end{figure}
 
 \section{Frontend Implementation}
-The frontend uses Next.js with the App Router. It integrates localization, UI components, and interactive workflows for marketplace browsing, community engagement, designer pages, and 2D try-on.
+\label{sec:impl-frontend}
+
+The frontend is implemented as a Next.js 15 application using the App Router architecture with TypeScript. It delivers the complete user-facing experience: marketplace browsing, virtual try-on interfaces, the AI fashion assistant, community features, merchant and admin dashboards, and customer service portals.
+
+\subsection{Routing and Page Structure}
+
+All user-facing pages are nested under a \texttt{[locale]} dynamic segment that enables locale-based routing. The application contains 26 route directories under \texttt{app/[locale]/}, including pages for authentication (\texttt{login}, \texttt{signup}, \texttt{forgot-password}), e-commerce (\texttt{shop}, \texttt{product/[id]}, \texttt{cart}, \texttt{checkout}, \texttt{orders}, \texttt{order-success}, \texttt{wishlist}), AI features (\texttt{virtual-tryon}, \texttt{recommendations}), community (\texttt{community}), dashboards (\texttt{dashboard}, \texttt{merchant-owner}, \texttt{admin}), and support (\texttt{customer-service}).
+
+Each route directory contains a \texttt{page.tsx} file that defines the page component, and may include \texttt{layout.tsx} files for nested layouts. The locale layout component reads the current locale from the URL parameter and applies the appropriate \texttt{dir} attribute (\texttt{rtl} for Arabic, \texttt{ltr} for English) to the root HTML element.
+
+\subsection{Internationalization Implementation}
+
+The application uses \texttt{next-intl} for internationalization. Translation files are organized under \texttt{messages/} with separate JSON files for Arabic and English. The \texttt{middleware.ts} file intercepts all requests, detects the user's preferred locale from the URL path, and redirects bare URLs to the default locale. All user-facing text references translation keys through the \texttt{useTranslations} hook rather than hardcoded strings.
+
+RTL support extends beyond text direction. The CSS layer uses Tailwind's RTL plugin (\texttt{tailwindcss-rtl}) to flip directional utilities (margins, paddings, borders) automatically based on the document's \texttt{dir} attribute, ensuring consistent layout mirroring for Arabic users.
+
+\subsection{State Management and Data Fetching}
+
+The frontend uses \textbf{TanStack React Query} as its primary server state management solution. This provides:
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Automatic caching} --- Query results are cached with configurable stale times, reducing redundant network requests when navigating between pages.
+    \item \textbf{Background refetching} --- Stale data is automatically refreshed in the background when the user revisits a page or refocuses the browser window.
+    \item \textbf{Optimistic updates} --- For mutations like adding items to the cart or toggling wishlist status, the UI updates immediately while the network request executes in the background.
+    \item \textbf{Persistence} --- Query cache is synchronized to local storage via \texttt{@tanstack/query-sync-storage-persister}, allowing cached data to survive page refreshes.
+\end{itemize}
+
+API communication is centralized through a typed API client module that attaches JWT access tokens from local storage to all authenticated requests and intercepts \texttt{401 Unauthorized} responses to check for a refreshed token in the \texttt{X-New-Access-Token} response header, implementing transparent token rotation on the client side.
+
+\subsection{UI Component Library}
+
+The frontend uses \textbf{Radix UI} as its headless component primitive library, providing accessible, unstyled components for dialogs, dropdowns, tabs, tooltips, accordions, popovers, and other interactive patterns. These primitives are styled using Tailwind CSS and wrapped in project-specific component files under \texttt{components/ui/}. The component library includes over 25 Radix-based components configured with consistent styling through \texttt{class-variance-authority} for variant management and \texttt{tailwind-merge} for class conflict resolution.
+
+\textbf{Framer Motion} provides animation capabilities across the application, including page transitions, skeleton loading states, modal entry/exit animations, and micro-interactions on interactive elements such as like buttons, vote toggles, and card hover effects.
+
+\subsection{Key Page Implementations}
+
+\textbf{Shop Page.} The product catalog page implements multi-faceted filtering with category, type, gender, brand, color, size, and price range filters. Products are displayed in a responsive grid layout with lazy-loaded images served from Cloudinary with automatic format and quality optimization. The page supports both grid and list view modes.
+
+\textbf{Product Detail Page.} Each product page displays a multi-image gallery with zoom capability, size and color selectors, the merchant's size measurement chart (if available), customer reviews with star ratings and threaded replies, and action buttons for adding to cart, wishlist, and initiating virtual try-on. The page is rendered using dynamic routes (\texttt{product/[id]}) with server-side data fetching.
+
+\textbf{Virtual Try-On Page.} The try-on interface allows users to upload or select a person image (or use their saved profile try-on image) and a garment image. The page communicates with the backend, which proxies the request to the try-on FastAPI service. Results are displayed with before/after comparison and saved to the user's try-on history. The interface supports both single-view and multi-angle try-on modes.
+
+\textbf{AI Fashion Assistant.} The chat interface is implemented as a floating chat widget accessible from any page. It renders conversation bubbles with Markdown formatting, embeds product cards with images and prices directly in the chat flow, and supports both Arabic and English input with automatic language detection. The interface communicates directly with the RAG service.
+
+\textbf{Community Page.} The community section displays posts in a masonry layout using \texttt{react-masonry-css}, with tabbed navigation between post types (issues, reviews, tips, questions) and designer submissions. Each post card shows the author, timestamp, engagement counts, and a preview of the content. The design gallery renders design proposals with their approval status and vote counters.
+
+\textbf{Merchant Dashboard.} Merchants access a dedicated dashboard for product management (CRUD operations with image upload), order management with status updates, and sales overview with charts rendered using \texttt{Recharts}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{figures/frontend-home.png}
+    \caption{The \projectname\ homepage with bilingual navigation and featured products.}
+    \label{fig:frontend-home}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{figures/frontend-shop.png}
+    \caption{The shop page with multi-faceted filtering and product grid layout.}
+    \label{fig:frontend-shop}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{figures/frontend-tryon.png}
+    \caption{The virtual try-on interface with image upload and result display.}
+    \label{fig:frontend-tryon}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{figures/frontend-chat.png}
+    \caption{The AI fashion assistant chat interface with embedded product cards.}
+    \label{fig:frontend-chat}
+\end{figure}
 
 \section{Try-On Service Implementation}
-The FastAPI try-on service exposes endpoints for the custom multiview 2D try-on pipeline. The implementation follows the same high-level stages described in the VTON360 research paper, including preprocessing, conditioning, synthesis, and post-processing. A splatfacto-based module uses multiview outputs to reconstruct a full 360 view.
+\label{sec:impl-tryon}
+
+The try-on service is implemented as a FastAPI application that exposes endpoints for multiple virtual try-on pipelines, body measurement estimation, and 360-degree video generation. The service uses an \texttt{asynccontextmanager}-based lifespan handler that initializes all service clients at startup, performs health checks, and gracefully closes connections at shutdown.
+
+\subsection{Service Client Architecture}
+
+The service manages five client instances through a centralized \texttt{ClientState} singleton:
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{ColabClient} --- Communicates with a remote GPU server running Prova-VTON for 2D virtual try-on inference.
+    \item \textbf{TrueFitClient} --- Connects to OpenRouter's API to access Gemini for multi-angle try-on using multimodal generative models.
+    \item \textbf{MultiviewClient} --- Communicates with a remote inference server for the Prova-VTON multiview pipeline.
+    \item \textbf{SHAPYClient} --- Connects to a local SHAPY service for 3D body mesh regression and measurement estimation.
+    \item \textbf{VideoPreprocessor} --- A local service that runs YOLOv8, Detectron2/DensePose, and human parsing for preprocessing.
+\end{itemize}
+
+All HTTP-based clients share a consistent implementation pattern using \texttt{httpx.AsyncClient} with configurable timeouts, connection pool limits, and automatic retry with exponential backoff for transient failures (HTTP 429, 5xx). Each client exposes a \texttt{health\_check()} method that is called at startup and can be queried through the aggregated \texttt{/api/health} endpoint.
+
+\subsection{Virtual Try-On Pipelines}
+
+The implementation of the try-on pipelines directly realizes the architectures designed in Chapter~4, orchestrating local preprocessing and remote GPU inference.
+
+\textbf{2D Try-On (Prova-VTON):} The \texttt{/api/tryon/try-on} endpoint accepts multipart form data and proxies the person and garment images to the remote inference server via the \texttt{ColabClient}. The result is returned as binary data.
+
+\textbf{Multi-Angle Try-On:} The \texttt{TrueFitClient} implements the two-stage multi-angle pipeline. It executes the transparency and skin-tone heuristics to classify the garment reference, extracts the garment if necessary, and then processes multiple viewpoints concurrently using an \texttt{asyncio.Semaphore} (concurrency limit of 2) to optimize throughput while respecting API limits.
+
+\textbf{Multiview Pipeline (Prova-VTON):} The \texttt{prova-vton} router implements the five-stage asynchronous workflow. The \texttt{VideoPreprocessor} sequentially runs YOLOv8, Detectron2 with DensePose, and the SCHP human parsing network to generate the structured dataset hierarchy. The \texttt{MultiviewClient} then manages the upload, remote inference polling, and result retrieval.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{figures/tryon-multiangle.png}
+    \caption{Multi-angle virtual try-on results across four viewpoints.}
+    \label{fig:tryon-multiangle}
+\end{figure}
 
 \section{Body Measurement Implementation}
-The measurement module estimates key body measurements from images and maps them to size recommendations. This section will detail the measurement pipeline, inputs, outputs, and the sizing rules used by the system.
+\label{sec:impl-measurement}
 
-\section{RAG System Implementation}
-The retrieval system ingests product data into a vector store and performs semantic search to surface relevant items. It is integrated into the marketplace experience to support discovery and recommendation flows.
+The body measurement pipeline is implemented in the \texttt{measurements} router (280 lines) and the \texttt{SHAPYClient} service class. It transforms a single front-facing photograph into body measurements and size recommendations through a multi-stage process.
 
-\section{Models and Equations}
-This section will detail the models used in the system and the key equations involved in try-on conditioning, measurement estimation, 360 reconstruction, and retrieval scoring.
+\subsection{Input Processing}
 
-\section{Datasets}
-This section will document datasets used for evaluation, including sources, sizes, preprocessing steps, and splits.
+The measurement endpoint (\texttt{POST /api/measurements/measure}) accepts the following inputs as multipart form data:
 
-\section{Results}
-This section will present quantitative metrics, qualitative results, and sample outputs for each subsystem.
+\begin{itemize}[leftmargin=*]
+    \item \texttt{front\_image} --- A full-body frontal photograph (required).
+    \item \texttt{height\_cm} --- Person's height in centimeters (default: 170.0).
+    \item \texttt{weight\_kg} --- Person's weight in kilograms (optional, improves accuracy).
+    \item \texttt{gender} --- Male, female, or unisex (default: unisex).
+    \item \texttt{region} --- Size chart region: EU, US, UK, IT, FR, or DE (default: EU).
+    \item \texttt{fit} --- Fit preference: regular, slim, or oversized (default: regular).
+\end{itemize}
+
+Input validation checks image file extension, file size limits, height range (50--300~cm), weight range (20--500~kg), and gender values before forwarding to the SHAPY service.
+
+\subsection{SHAPY Inference}
+
+The \texttt{SHAPYClient} sends the validated image and metadata to a local SHAPY service~\cite{choutas2022shapy} running on port 8001. SHAPY performs SMPL-X body mesh regression, fitting a parametric 3D body model to the input image and returning raw shape parameters, predicted mass, and circumference estimates for chest, waist, and hip.
+
+\subsection{Weight-Based Circumference Correction}
+
+A key implementation detail is the weight-based correction applied when the SHAPY-predicted body mass deviates significantly from the user-provided weight. Body circumferences scale approximately as the square root of mass at constant height. If the deviation exceeds 5~kg, a correction factor is applied:
+
+\begin{equation}
+    f_{\text{correction}} = \sqrt{\frac{w_{\text{user}}}{w_{\text{SHAPY}}}}
+    \label{eq:weight-correction}
+\end{equation}
+
+where $w_{\text{user}}$ is the user-provided weight and $w_{\text{SHAPY}}$ is the SHAPY-predicted mass. This factor is applied multiplicatively to the chest, waist, and hip circumferences. The correction compensates for the inherent ambiguity of estimating depth from a single 2D image, where loose clothing, camera perspective, or unusual poses may cause the predicted body shape to deviate from reality.
+
+The magnitude of the correction affects the confidence score: deviations of 5--10~kg maintain a ``good'' confidence (0.85), 10--15~kg reduces to ``good'' (0.75), and deviations exceeding 15~kg result in ``fair'' confidence (0.65).
+
+\subsection{Derived Measurements}
+
+From the (possibly corrected) circumferences, additional body dimensions are derived using ISO~7250 anthropometric ratios~\cite{choutas2022shapy}:
+
+\begin{longtable}{p{4cm} p{4cm} p{5.5cm}}
+\toprule
+\textbf{Measurement} & \textbf{Formula} & \textbf{Source} \\
+\midrule
+\endfirsthead
+\endhead
+\bottomrule
+\endfoot
+
+Chest width & $C_{\text{chest}} \times 0.318$ & Circumference to width ratio \\
+Waist width & $C_{\text{waist}} \times 0.320$ & Circumference to width ratio \\
+Hip width & $C_{\text{hip}} \times 0.360$ & Circumference to width ratio \\
+Thigh circumference & $C_{\text{hip}} \times 0.58$ (M) / $0.62$ (F) & Hip-to-thigh ratio \\
+Shoulder width & $H \times 0.232$ (M) / $0.215$ (F) & Height-ratio (biacromial) \\
+Neck circumference & $H \times 0.210$ (M) / $0.195$ (F) & Height-ratio \\
+Arm length & $H \times 0.347$ & Nape to wrist \\
+Shirt length & $H \times 0.395$ & Nape to hem \\
+Trouser length & $H \times 0.470$ & Inseam length \\
+\end{longtable}
+\captionof{table}{Derived body measurements from circumferences and height using ISO~7250 anthropometric ratios. $H$ = height, $C$ = circumference, M = male, F = female.}
+\label{tab:derived-measurements}
+
+\subsection{Size Recommendation Engine}
+
+The size recommendation module maps chest and waist circumferences to regional size charts. The implementation defines measurement breakpoints for seven size levels (XS through 3XL):
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Top sizes} use chest circumference breakpoints: 0~(XS), 84~(S), 92~(M), 100~(L), 108~(XL), 116~(XXL), 124~(3XL) cm.
+    \item \textbf{Bottom sizes} use waist circumference breakpoints: 0~(XS), 68~(S), 76~(M), 84~(L), 92~(XL), 100~(XXL), 108~(3XL) cm.
+\end{itemize}
+
+The fit preference applies a level shift: \texttt{slim} shifts one bracket smaller ($-1$), \texttt{regular} maintains the exact bracket ($0$), and \texttt{oversized} shifts one bracket larger ($+1$). Regional labels map these levels to the appropriate notation for each sizing system (e.g., EU ``M'' corresponds to IT ``44'' and FR ``40'').
+
+The engine returns recommendations for all six supported regions (EU, US, UK, IT, FR, DE) simultaneously, allowing users to see their size across different sizing standards.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{figures/measurement-results.png}
+    \caption{Size recommendation displayed to the user on the product page based on estimated body measurements.}
+    \label{fig:measurement-results}
+\end{figure}
+
+\section{RAG Fashion Assistant Implementation}
+\label{sec:impl-rag}
+
+The retrieval-augmented generation (RAG) fashion assistant is implemented as a separate FastAPI service under the \texttt{chat/} directory. The service implements a five-stage pipeline that transforms natural language messages into product recommendations grounded in the actual product catalog.
+
+\subsection{Pipeline Orchestration}
+
+The orchestrator (\texttt{rag/pipeline.py}) serves as the single entry point. It implements the five-stage process (Message Classification, Intent Extraction, Product Retrieval, Outfit Assembly, and Response Composition) defined in Chapter~4. The pipeline collects performance metrics at each stage and attaches timing breakdowns to the API response metadata. Language detection for bilingual routing uses a fast Unicode range check for Arabic characters (\texttt{U+0600}--\texttt{U+06FF}).
+
+\subsection{Hybrid Retrieval Implementation}
+\label{sec:impl-rag-retrieval}
+
+The retriever implements the two-stage hybrid search using MongoDB and local embeddings.
+
+\textbf{Stage 1 (Metadata Filtering):} The retriever constructs a MongoDB query applying filters for stock, gender, price, color (via color group regex matching), size, and brand. It implements progressive relaxation: if the result set is too small, filters are systematically relaxed (e.g., removing color constraints) to ensure the pipeline always returns candidates.
+
+\textbf{Stage 2 (Semantic Ranking):} Semantic ranking computes cosine similarity between the user's query and cached product embeddings using the Sentence-BERT (\texttt{all-MiniLM-L6-v2}) model running locally on CPU. Products failing to meet the similarity threshold (default: 0.25) are filtered out before outfit assembly.
+
+\subsection{Outfit Assembly}
+\label{sec:impl-rag-outfit}
+
+The outfit assembler transforms a ranked list of products into complete outfit combinations through four steps:
+
+\textbf{1. Slot Classification.} Each product is assigned to an outfit slot (top, bottom, shoes, accessory, outerwear, or full\_body) based on its \texttt{type} field. The classifier first attempts a direct lookup in a type-to-slot mapping dictionary, then performs fuzzy matching on the type string, and finally falls back to keyword detection in the product name.
+
+\textbf{2. Composite Scoring.} Each product receives a composite score that combines six weighted dimensions:
+
+\begin{itemize}[leftmargin=*]
+    \item Semantic similarity (40\%) --- from the retriever's ranking.
+    \item Color match (20\%) --- direct and group-based color matching against the user's requested colors.
+    \item Occasion affinity (15\%) --- matching product occasion tags and styles against the intent's occasion.
+    \item Season/material match (10\%) --- matching product material against season-appropriate materials.
+    \item Price fit (10\%) --- scoring based on how well the price fits within the budget range.
+    \item Brand preference (5\%) --- bonus for matching preferred brands.
+\end{itemize}
+
+\textbf{3. Outfit Construction.} The assembler builds up to 3 complete outfits by selecting the top-ranked items from each slot. A complete outfit requires at minimum a top and a bottom, or a full-body item (dress/jumpsuit). Shoes and accessories are added when available. Outerwear is included for winter and fall season intents. Each outfit receives a theme name generated from the occasion (e.g., ``Boardroom Sharp'' for formal, ``Beach Day'' for beach) and a total price with budget constraint checking.
+
+\textbf{4. Fallback.} If no valid outfit can be assembled from the slot groups, the assembler returns the top-ranked individual products as a ``Top Picks'' collection.
+
+\subsection{Conversation History and Knowledge Base}
+
+The service maintains per-user conversation history in an in-memory LRU store keyed by \texttt{user\_id} (primary) or \texttt{session\_id} (fallback). The store supports up to 5,000 distinct keys and 20 turns per key. This enables multi-turn conversations where the assistant references previous queries.
+
+A fashion knowledge base (\texttt{rag/knowledge\_base.py}) provides profile-aware styling guidance. The knowledge base contains rules indexed by body type, height range, and gender that map to recommended silhouettes, colors, and fit preferences. When the user's profile includes physical attributes, the retriever consults the knowledge base to augment recommendations with personalized advice.
+
+\section{360-Degree Reconstruction Implementation}
+\label{sec:impl-360}
+
+The 360-degree reconstruction module generates interactive 360-degree previews from multiview try-on outputs. The implementation uses a Runway-based video generation client (\texttt{RunwayVideoClient}, 685 lines) and integrates with the Splatfacto 3D Gaussian splatting pipeline from Nerfstudio~\cite{tancik2023nerfstudio}.
+
+\subsection{Video Generation Pipeline}
+
+The \texttt{runway360} router exposes endpoints for generating 360-degree preview videos from try-on results. The \texttt{RunwayVideoClient} communicates with the Runway API to generate smooth rotation videos from multiview images. The client implements the same retry and error handling patterns as other service clients, with configurable API versioning and timeout settings.
+
+\subsection{Gaussian Splatting Reconstruction}
+
+For interactive 360-degree viewing, multiview try-on outputs can be processed through the Splatfacto pipeline~\cite{kerbl2023gaussians}. The pipeline takes the set of view-consistent try-on images generated by the Prova-VTON pipeline as input, along with estimated camera parameters, and produces a 3D Gaussian splatting representation that can be rendered in real-time from arbitrary viewpoints. This enables users to freely rotate and inspect the virtual try-on result from any angle.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{figures/360-preview.png}
+    \caption{360-degree rotation video preview generated from multiview try-on outputs.}
+    \label{fig:360-preview}
+\end{figure}
+
+\section{Summary}
+This chapter has presented the implementation details of \projectname\ across all four services. The backend implementation described the Express middleware stack, 32 domain modules following a layered architecture, JWT-based authentication with transparent token rotation, and polymorphic community features. The frontend implementation covered the Next.js App Router structure with 26 route directories, bilingual support with RTL layout mirroring, TanStack React Query for state management, and the Radix UI component library. The try-on service implementation detailed the multi-angle pipeline with its garment preparation heuristics and concurrent view processing, the five-stage Prova-VTON multiview workflow with preprocessing through YOLOv8, DensePose, and human parsing, and the custom Prova-VTON 2D pipeline. The body measurement implementation described the SHAPY 3D mesh regression integration, the weight-based circumference correction formula, ISO~7250 derived measurements, and the multi-region size recommendation engine. The RAG implementation covered the five-stage pipeline with message classification, LLM-based intent extraction, hybrid retrieval with progressive relaxation, multi-dimensional outfit scoring, and bilingual response generation. Finally, the 360-degree reconstruction module described the Gaussian splatting integration for interactive previews. The testing and evaluation of these implementations are presented in Chapter~6.

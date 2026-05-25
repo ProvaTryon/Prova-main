@@ -31,7 +31,7 @@ The \textbf{frontend} delivers a bilingual (Arabic and English) web-based e-comm
 
 The \textbf{backend} serves as the central orchestration layer, managing authentication and authorization, product and merchant management, order processing, community content moderation, and coordination with AI services. It exposes RESTful APIs consumed by the frontend and handles the routing of AI requests to the appropriate specialized service.
 
-The \textbf{try-on service} provides multiple AI capabilities through a FastAPI application. The 2D virtual try-on pipeline uses OOTDiffusion, a diffusion-based model that fuses garment appearance into person images without explicit geometric warping. A multiview extension generates try-on results from multiple viewpoints, enabling consumers to see how a garment looks from the front, sides, and back. The preprocessing pipeline uses DensePose for dense body surface estimation and human parsing for semantic segmentation of clothing regions, providing the conditioning inputs required by the try-on model. A body measurement module uses SHAPY, a 3D body mesh regression model, to estimate anthropometric measurements from a single front-facing photograph. These measurements are mapped to size recommendations using regional size charts and anthropometric ratios. A 360-degree reconstruction module uses Gaussian splatting (Splatfacto) to generate interactive 360-degree previews from multiview try-on outputs.
+The \textbf{try-on service} provides multiple AI capabilities through a FastAPI application. The 2D virtual try-on pipeline uses Prova-VTON, a custom diffusion-based model trained on the MVHumanNet dataset that fuses garment appearance into person images without explicit geometric warping. A multiview extension generates try-on results from multiple viewpoints, enabling consumers to see how a garment looks from the front, sides, and back. The preprocessing pipeline uses DensePose for dense body surface estimation and human parsing for semantic segmentation of clothing regions, providing the conditioning inputs required by the try-on model. A body measurement module uses SHAPY, a 3D body mesh regression model, to estimate anthropometric measurements from a single front-facing photograph. These measurements are mapped to size recommendations using regional size charts and anthropometric ratios. A 360-degree reconstruction module uses Gaussian splatting (Splatfacto) to generate interactive 360-degree previews from multiview try-on outputs.
 
 The \textbf{retrieval and recommendation service} provides intelligent product discovery through a retrieval-augmented generation (RAG) pipeline. The system classifies user intent, extracts structured query attributes (garment type, color, budget, occasion, size) from natural language messages, retrieves candidate products through hybrid search combining MongoDB metadata filters with Sentence-BERT semantic ranking, assembles complete outfit recommendations, and generates bilingual natural language responses grounded in actual catalog data. A knowledge base provides profile-specific styling guidance based on the user's body measurements and preferences.
 
@@ -62,6 +62,8 @@ This project makes the following contributions:
 
     \item \textbf{A modular service architecture for AI orchestration.} The system demonstrates a practical architecture for coordinating heterogeneous AI services (diffusion models, 3D reconstruction, embedding-based retrieval, body mesh regression) through a unified API layer, with health monitoring, error handling, and analytics across all services.
 
+    \item \textbf{A custom Multiview Generation Architecture.} The core architecture of Prova-VTON is heavily inspired by the foundational multiview generation approach proposed by He et al. in VTON360~\cite{he2025vton360}. We successfully replicated this state-of-the-art architecture and custom-trained our models from scratch using the MVHumanNet dataset~\cite{zheng2024mvhumannet}, integrating it seamlessly into a production-ready e-commerce ecosystem.
+
     \item \textbf{A preprocessing and conditioning pipeline.} The project implements a complete preprocessing workflow that transforms raw user inputs (photographs, videos) into the structured conditioning data (DensePose maps, parsing masks, camera intrinsics) required by downstream AI models.
 
     \item \textbf{A hybrid retrieval pipeline for fashion discovery.} The RAG system combines structured metadata filtering with dense semantic ranking, intent classification, outfit assembly, and profile-aware knowledge base guidance, creating a retrieval pipeline specifically designed for fashion product catalogs.
@@ -75,12 +77,12 @@ This project makes the following contributions:
 This project encompasses the following:
 \begin{itemize}[leftmargin=*]
     \item A complete web-based e-commerce platform with marketplace, community, and designer features.
-    \item A 2D virtual try-on pipeline using diffusion-based synthesis (OOTDiffusion) with single-view and multi-angle support.
+    \item A 2D virtual try-on pipeline using a custom trained diffusion-based synthesis model (Prova-VTON) with single-view and multi-angle support.
     \item A preprocessing pipeline using DensePose and human parsing for body surface estimation.
     \item Body measurement estimation using SHAPY 3D mesh regression with size chart mapping.
     \item A 360-degree reconstruction pipeline using Gaussian splatting (Splatfacto).
     \item A retrieval-augmented discovery system with hybrid search, intent classification, and bilingual support.
-    \item A multiview virtual try-on workflow inspired by the VTON360 research pipeline.
+    \item A custom multiview virtual try-on workflow powered by Prova-VTON.
 \end{itemize}
 
 \subsection{Out of Scope}

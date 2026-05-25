@@ -19,7 +19,7 @@ This chapter translates the requirements and analysis artifacts from Chapter~3 i
 
 \begin{figure}[H]
     \centering
-    \fbox{\parbox{0.9\textwidth}{\centering\vspace{3cm}\textit{High-Level Architecture Diagram --- to be inserted}\vspace{3cm}}}
+    \includegraphics[width=\textwidth]{figures/arch-overview.png}
     \caption{High-level service-oriented architecture of \projectname.}
     \label{fig:arch-overview}
 \end{figure}
@@ -107,9 +107,9 @@ The Try-On Service is a \textbf{FastAPI} application organized into routers, ser
 
 \textbf{Routers} define the API surface:
 \begin{itemize}[leftmargin=*]
-    \item \texttt{/api/tryon} — Single-view 2D virtual try-on using OOTDiffusion via a remote Colab inference server.
+    \item \texttt{/api/tryon} — Single-view 2D virtual try-on using Prova-VTON via a remote inference server.
     \item \texttt{/api/multiangle} — Multi-angle try-on using a multimodal generative model for front, right, left, and back viewpoints.
-    \item \texttt{/api/vton360} — Multiview pipeline with preprocessing, dataset construction, remote inference, and result retrieval.
+    \item \texttt{/api/prova-vton} — Multiview pipeline with preprocessing, dataset construction, remote inference, and result retrieval.
     \item \texttt{/api/measurements} — Body measurement estimation using the SHAPY client with size recommendation mapping.
     \item \texttt{/api/video360} — 360-degree video generation from multiview try-on outputs.
     \item \texttt{/api/health} — Aggregated health check across all service clients.
@@ -124,6 +124,9 @@ The Try-On Service is a \textbf{FastAPI} application organized into routers, ser
 \end{itemize}
 
 A \textbf{ClientState} singleton manages the lifecycle of all service clients. It is initialized once at application startup and provides dependency injection to routers via FastAPI's dependency system.
+
+\subsection{Prova-VTON Model Design and Dataset}
+The core of the try-on capabilities is powered by Prova-VTON, a custom diffusion-based generative model. Unlike systems relying on generic pre-trained zero-shot models, Prova-VTON was explicitly trained to handle the complex geometric transformations required for both 2D and multi-angle scenarios. The model architecture is designed with view-consistent conditioning and cross-view attention mechanisms to preserve garment identity across different camera angles. To achieve high fidelity, the model was trained on the MVHumanNet dataset, a large-scale multiview human dataset containing thousands of diverse human identities, poses, and clothing combinations captured from multiple camera viewpoints. This training enables Prova-VTON to natively understand 3D body priors and synthesize view-consistent garment deformations without requiring explicit geometric warping.
 
 \subsection{Multi-Angle Try-On Pipeline Design}
 The multi-angle try-on client implements a two-stage pipeline for producing realistic virtual try-on results across multiple viewpoints:
@@ -146,7 +149,7 @@ For model-worn garment references, an extraction step uses the multimodal model 
 
 For multi-angle try-on, the system processes multiple viewpoints concurrently using an asyncio semaphore (concurrency limit of 2) to balance throughput against API rate limits. Garment preparation is performed once and shared across all views.
 
-\subsection{Multiview (VTON360) Pipeline Design}
+\subsection{Multiview (Prova-VTON) Pipeline Design}
 The multiview pipeline is designed for generating view-consistent try-on results across all angles. It operates in five stages:
 
 \begin{enumerate}[leftmargin=*]
@@ -160,6 +163,32 @@ The multiview pipeline is designed for generating view-consistent try-on results
 
     \item \textbf{Result Retrieval} — Completed results are downloaded, extracted, and made available through the API. The multiview outputs can optionally be fed into the Splatfacto 3D Gaussian splatting pipeline for 360-degree interactive reconstruction.
 \end{enumerate}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+    node distance=1.5cm and 1cm,
+    process/.style={rectangle, minimum width=3.5cm, minimum height=1cm, text centered, draw=provablue, fill=provalight, font=\small\bfseries, rounded corners},
+    arrow/.style={thick,->,>=stealth, provablue}
+]
+
+% Nodes
+\node (n1) [process] {1. Preprocessing (YOLO, DensePose, SCHP)};
+\node (n2) [process, below=of n1] {2. Cloth Preparation (RGB/JPEG Format)};
+\node (n3) [process, below=of n2] {3. Dataset Construction (ZIP Archive)};
+\node (n4) [process, below=of n3] {4. Remote Inference (GPU Cluster)};
+\node (n5) [process, below=of n4] {5. Result Retrieval \& 3D Splatting};
+
+% Arrows
+\draw [arrow] (n1) -- (n2);
+\draw [arrow] (n2) -- (n3);
+\draw [arrow] (n3) -- (n4);
+\draw [arrow] (n4) -- (n5);
+
+\end{tikzpicture}
+\caption{The five-stage architecture of the Prova-VTON multiview pipeline.}
+\label{fig:prova-vton-pipeline}
+\end{figure}
 
 \subsection{Measurement Pipeline Design}
 The measurement pipeline transforms a single front-facing photograph into body measurements and size recommendations through the following stages:
@@ -237,15 +266,15 @@ The Try-On Service accepts multipart form data for image uploads. Key endpoints 
 \bottomrule
 \endfoot
 
-\texttt{/api/tryon/try-on} & POST & Submit person and garment images for 2D try-on using OOTDiffusion. \\
+\texttt{/api/tryon/try-on} & POST & Submit person and garment images for 2D try-on using Prova-VTON. \\
 \texttt{/api/multiangle/tryon} & POST & Single-view try-on with garment type, source mode, and placement controls. \\
 \texttt{/api/multiangle/multi} & POST & Multi-angle try-on across front, right, left, and back viewpoints. \\
 \texttt{/api/measurements/measure} & POST & Body measurement estimation from a front-facing photograph. \\
-\texttt{/api/vton360/preprocess} & POST & Preprocess person video/images for the multiview pipeline. \\
-\texttt{/api/vton360/upload-cloth} & POST & Upload garment front and back images. \\
-\texttt{/api/vton360/build-dataset} & POST & Assemble preprocessed data into inference-ready format. \\
-\texttt{/api/vton360/infer} & POST & Submit dataset for multiview inference. \\
-\texttt{/api/vton360/results} & GET & Retrieve completed inference results. \\
+\texttt{/api/prova-vton/preprocess} & POST & Preprocess person video/images for the multiview pipeline. \\
+\texttt{/api/prova-vton/upload-cloth} & POST & Upload garment front and back images. \\
+\texttt{/api/prova-vton/build-dataset} & POST & Assemble preprocessed data into inference-ready format. \\
+\texttt{/api/prova-vton/infer} & POST & Submit dataset for multiview inference. \\
+\texttt{/api/prova-vton/results} & GET & Retrieve completed inference results. \\
 \texttt{/api/health} & GET & Aggregated health status across all service clients. \\
 \end{longtable}
 
@@ -306,7 +335,7 @@ The system is designed for deployment across multiple environments:
 
     \item \textbf{Backend} — Runs as a Node.js process with PM2 for process management and automatic restarts. Connects to a managed MongoDB Atlas cluster.
 
-    \item \textbf{Try-On Service} — Runs as a Uvicorn ASGI server. GPU-intensive inference (OOTDiffusion, VTON360) is offloaded to remote Colab or dedicated GPU servers accessed via HTTP. The local service handles preprocessing, orchestration, and result delivery.
+    \item \textbf{Try-On Service} — Runs as a Uvicorn ASGI server. GPU-intensive inference (Prova-VTON) is offloaded to remote GPU servers accessed via HTTP. The local service handles preprocessing, orchestration, and result delivery.
 
     \item \textbf{Chat Service} — Runs as a Uvicorn ASGI server. The Sentence-BERT embedding model runs locally on CPU. LLM inference is delegated to an external API endpoint.
 
