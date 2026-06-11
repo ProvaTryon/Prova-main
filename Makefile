@@ -4,7 +4,7 @@
 .DEFAULT_GOAL := help
 
 # Variables
-BACKEND_DIR = backend-web
+BACKEND_DIR = backend
 FRONTEND_DIR = frontend
 
 # Detect OS
