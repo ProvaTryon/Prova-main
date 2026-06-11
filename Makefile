@@ -43,9 +43,9 @@ else
 	@echo "\033[0;32mStarting backend development server...\033[0m"
 endif
 ifeq ($(detected_OS),Windows)
-	cd $(BACKEND_DIR) && npm run dev
+	cd $(BACKEND_DIR) && pnpm run dev
 else
-	cd $(BACKEND_DIR) && npm run dev
+	cd $(BACKEND_DIR) && pnpm run dev
 endif
 
 .PHONY: backend-start
@@ -55,7 +55,7 @@ ifeq ($(detected_OS),Windows)
 else
 	@echo "\033[0;32mStarting backend production server...\033[0m"
 endif
-	cd $(BACKEND_DIR) && npm start
+	cd $(BACKEND_DIR) && pnpm start
 
 .PHONY: backend-install
 backend-install: ## Install backend dependencies
@@ -64,7 +64,7 @@ ifeq ($(detected_OS),Windows)
 else
 	@echo "\033[0;32mInstalling backend dependencies...\033[0m"
 endif
-	cd $(BACKEND_DIR) && npm install
+	cd $(BACKEND_DIR) && pnpm install
 
 .PHONY: backend-test
 backend-test: ## Run backend tests
@@ -73,7 +73,7 @@ ifeq ($(detected_OS),Windows)
 else
 	@echo "\033[0;32mRunning backend tests...\033[0m"
 endif
-	cd $(BACKEND_DIR) && npm test
+	cd $(BACKEND_DIR) && pnpm test
 
 ## Frontend Commands
 .PHONY: frontend-dev
@@ -83,7 +83,7 @@ ifeq ($(detected_OS),Windows)
 else
 	@echo "\033[0;32mStarting frontend development server...\033[0m"
 endif
-	cd $(FRONTEND_DIR) && npm run dev
+	cd $(FRONTEND_DIR) && pnpm run dev
 
 .PHONY: frontend-install
 frontend-install: ## Install frontend dependencies
@@ -92,7 +92,7 @@ ifeq ($(detected_OS),Windows)
 else
 	@echo "\033[0;32mInstalling frontend dependencies...\033[0m"
 endif
-	cd $(FRONTEND_DIR) && npm install
+	cd $(FRONTEND_DIR) && pnpm install
 
 ## Combined Commands
 .PHONY: install
@@ -104,7 +104,8 @@ else
 endif
 
 .PHONY: dev
-dev: backend-dev frontend-dev ## Start all development servers
+dev: ## Start all development servers concurrently
+	$(MAKE) -j 2 backend-dev frontend-dev
 
 .PHONY: clean
 clean: ## Clean node_modules and package-lock files
@@ -125,11 +126,11 @@ endif
 .PHONY: setup
 setup: ## Setup development environment
 ifeq ($(detected_OS),Windows)
-	@powershell -Command "Write-Host 'Setting up development environment...' -ForegroundColor Green; Write-Host 'Detected OS: $(detected_OS)'; Write-Host 'Make sure you have Node.js and npm installed'; Write-Host 'Run ''make install'' to install dependencies'; Write-Host 'Setup instructions displayed!' -ForegroundColor Green"
+	@powershell -Command "Write-Host 'Setting up development environment...' -ForegroundColor Green; Write-Host 'Detected OS: $(detected_OS)'; Write-Host 'Make sure you have Node.js and pnpm installed'; Write-Host 'Run ''make install'' to install dependencies'; Write-Host 'Setup instructions displayed!' -ForegroundColor Green"
 else
 	@echo "\033[0;32mSetting up development environment...\033[0m"
 	@echo "Detected OS: $(detected_OS)"
-	@echo "Make sure you have Node.js and npm installed"
+	@echo "Make sure you have Node.js and pnpm installed"
 	@echo "Run 'make install' to install dependencies"
 	@echo "\033[0;32mSetup instructions displayed!\033[0m"
 endif
