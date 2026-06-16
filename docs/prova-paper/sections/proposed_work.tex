@@ -1,0 +1,233 @@
+% =====================================================================
+% 3. PROPOSED WORK
+% =====================================================================
+\section{Proposed Work}
+
+\subsection{System Architecture}
+
+\projectname{} is realised as a service-oriented architecture (SOA) consisting of four microservices that communicate over RESTful HTTP interfaces, as depicted in Fig.~\ref{fig:arch}. The \textit{Frontend Service} (Next.js) renders the bilingual storefront with RTL support for Arabic. The \textit{Backend Service} (Express/TypeScript) orchestrates authentication, e-commerce logic, community features, and proxies AI requests. The \textit{Try-On Service} (FastAPI) encapsulates all computer-vision pipelines---virtual try-on, body measurement, and 360-degree reconstruction. The \textit{Chat Service} (FastAPI) hosts the RAG fashion assistant. MongoDB serves as the shared data store, while Cloudinary provides cloud media storage.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{figures/arch-overview.png}
+    \caption{high-level service-oriented architecture of prova showing the four independently deployable microservices and their communication paths.}
+    \label{fig:arch}
+\end{figure}
+
+\subsection{Prova-VTON: Multiview Virtual Try-On}
+
+The centrepiece of the platform is Prova-VTON, a latent diffusion model for view-consistent garment synthesis. This work replicates the architectural pipeline proposed by VTON360~\cite{he2025vton360}, specifically adapting its multiview generation framework for our deployment. The architecture (Fig.~\ref{fig:vton-arch}) consists of a UNet denoiser conditioned on DensePose maps, human-parsing masks, and garment reference images, augmented with cross-view attention layers that propagate garment identity across camera angles.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{figures/vton-model-arch.png}
+    \caption{architecture of the prova-vton model, replicating the vton360 pipeline for view-consistent garment synthesis.}
+    \label{fig:vton-arch}
+\end{figure}
+
+The underlying mathematical framework of Prova-VTON is constructed upon eight core formulations adapted from the VTON360 pipeline:
+
+\textbf{1. Latent Diffusion Training Objective.} The network learns to predict injected Gaussian noise following the standard denoising objective in latent diffusion models:
+\begin{equation}
+    \mathcal{L}_{LDM} = \mathbb{E}_{z,c,\epsilon,t} \left[ \|\epsilon - \epsilon_{\theta}(z_t; c, t)\|_2^2 \right]
+\end{equation}
+
+\textbf{2. Multi-View Feature Aggregation.} Features from multiple viewing directions are concatenated together with front and back garment representations to construct a unified multi-view representation:
+\begin{equation}
+    F^l = [F_1^l \oplus F_2^l \oplus \cdots \oplus F_m^l]
+\end{equation}
+\begin{equation}
+    \hat{F}^l = [F^l \oplus F_f^l \oplus F_b^l]
+\end{equation}
+
+\textbf{3. Query, Key, and Value Projections.} Learnable projection matrices transform the feature representations into the attention space:
+\begin{equation}
+    Q = W_Q F^l, \quad K = W_K \hat{F}^l, \quad V = W_V \hat{F}^l
+\end{equation}
+
+\textbf{4. Camera-Aware Multi-View Attention.} A correlation matrix $C_{i,j}$ modulates attention scores according to geometric similarity between viewpoints, enabling information sharing among nearby views:
+\begin{equation}
+    A_i = \text{softmax}\left(\frac{Q_i (C_i K^T)}{\sqrt{d}}\right), \quad H_i^l = A_i V_i
+\end{equation}
+
+\textbf{5. Camera Correlation Matrix.} $R_i$ and $R_j$ denote camera rotation matrices. This formulation measures similarity between viewpoints by computing the cosine of the relative rotation angle and normalising it to $[0,1]$:
+\begin{equation}
+    C_{i,j} = \frac{\left(\frac{\text{trace}(R_i^T R_j) - 1}{2}\right) + 1}{2}
+\end{equation}
+
+\textbf{6. Camera Positional Encoding.} The camera rotation vector $r_i$ is encoded using multi-frequency sinusoidal functions to preserve geometric information across viewing directions:
+\begin{equation}
+    F_i^c = \left(\sin(2^0\pi r_i), \cos(2^0\pi r_i), \dots, \sin(2^{L-1}\pi r_i), \cos(2^{L-1}\pi r_i)\right)
+\end{equation}
+
+\textbf{7. Camera-Aware Cross-Attention Conditioning.} Garment embeddings are enriched with camera information before being used as conditioning signals in the diffusion network:
+\begin{equation}
+    Y_i = F_g \oplus \text{MLP}(F_i^c)
+\end{equation}
+\begin{equation}
+    Q_x = W_Q^x H_i^l, \quad K_x = W_K^x Y_i, \quad V_x = W_V^x Y_i
+\end{equation}
+\begin{equation}
+    \text{Output}_x = \text{softmax}\left(\frac{Q_x K_x^T}{\sqrt{d_x}}\right) V_x
+\end{equation}
+
+\textbf{8. Final VTON360 Training Objective.} The comprehensive objective incorporates garment latent features and normal-map representations ($\eta$), multi-view garment CLIP embeddings ($\psi$), and clothing-agnostic person representations ($\zeta$):
+\begin{equation}
+    \mathcal{L} = \mathbb{E}_{z,t,\eta,\psi,\zeta,\epsilon} \left[ \|\epsilon - \epsilon_{\theta}(z_t, t, \eta, \psi, \zeta)\|_2^2 \right]
+\end{equation}
+
+The model was trained from scratch on the MVHumanNet dataset~\cite{zheng2024mvhumannet}, which provides thousands of identities captured from calibrated multi-camera rigs.
+
+Three complementary try-on modes are exposed to the user:
+
+\begin{enumerate}[leftmargin=*]
+    \item \textbf{Single-view 2D try-on.} A person image and a garment image are forwarded to the Prova-VTON inference server, which returns a single synthesised result.
+    \item \textbf{Multi-angle try-on.} Four viewpoints (front, right, left, back) are generated through a multimodal generative model, preceded by an automatic garment-preparation heuristic that classifies the input as a flat product shot or a model-worn photograph via alpha-channel analysis and skin-tone pixel detection.
+    \item \textbf{Full multiview pipeline.} A video or image set of the person is preprocessed (YOLOv8 detection, DensePose, SCHP parsing), packaged with garment front/back images into a structured archive, and submitted to the GPU inference cluster for batch synthesis.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{figures/tryon-multiangle.png}
+    \caption{multi-angle virtual try-on results generated by prova across front, right, left, and back viewpoints.}
+    \label{fig:tryon-multi}
+\end{figure}
+
+The multiview outputs may optionally be fed into the Splatfacto Gaussian splatting pipeline~\cite{tancik2023nerfstudio}, producing an interactive 3D reconstruction that allows the user to rotate the try-on result freely, as shown in Fig.~\ref{fig:360}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.70\textwidth]{figures/360-preview.png}
+    \caption{interactive 360-degree preview generated from multiview try-on outputs using 3d gaussian splatting.}
+    \label{fig:360}
+\end{figure}
+
+Algorithm~\ref{alg:multiview} summarises the end-to-end multiview try-on workflow.
+
+\begin{algorithm}[H]
+\caption{Prova-VTON Multiview Try-On Pipeline}
+\label{alg:multiview}
+\begin{algorithmic}[1]
+\State \textbf{Inputs:}
+\State \hspace{1em} $V$: person video or image set; $G_f, G_b$: garment front and back images
+\State \textbf{Parameters:}
+\State \hspace{1em} $\theta$: Prova-VTON model weights; $\sigma$: concurrency semaphore limit
+\State \textbf{Output:}
+\State \hspace{1em} $\mathcal{R}$: set of view-consistent try-on images; optional 3D Gaussian splat
+\State \textbf{Steps:}
+\State 1. Extract frames from $V$; detect persons via YOLOv8
+\State 2. For each frame: compute DensePose map and SCHP parsing mask
+\State 3. Organise $G_f, G_b$ into standardised cloth directory
+\State 4. Package preprocessed data and cloth images into ZIP archive $\mathcal{D}$
+\State 5. Upload $\mathcal{D}$ to GPU inference server; poll until completion
+\State 6. Download result set $\mathcal{R}$
+\State 7. \textbf{(Optional)} Feed $\mathcal{R}$ into Splatfacto for 360$^\circ$ reconstruction
+\State 8. Return $\mathcal{R}$
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Body Measurement Pipeline}
+
+Estimating reliable body dimensions from a single front-facing photograph is inherently ill-posed due to depth ambiguity. The proposed pipeline mitigates this through a three-stage process: SHAPY inference, weight-based correction, and ratio-derived measurement expansion.
+
+\subsubsection{SHAPY Inference and Correction}
+
+The input image is forwarded to a local SHAPY service~\cite{choutas2022shapy} that performs SMPL-X mesh regression, yielding raw chest, waist, and hip circumferences along with a predicted body mass $w_{\text{pred}}$. When the user supplies their actual weight $w_{\text{user}}$, a correction factor compensates for the systematic bias introduced by clothing and camera perspective:
+
+\begin{equation}
+    f_{\text{corr}} = \sqrt{\frac{w_{\text{user}}}{w_{\text{pred}}}}
+    \label{eq:correction}
+\end{equation}
+
+Each raw circumference is multiplied by $f_{\text{corr}}$ whenever $|w_{\text{user}} - w_{\text{pred}}| > 5$\,kg. The square-root form reflects the empirical observation that circumferences scale approximately as $\sqrt{\text{mass}}$ at constant height.
+
+\subsubsection{Derived Measurements and Size Mapping}
+
+Seven additional dimensions are computed from the corrected circumferences and the user-reported height $H$ using ISO\,7250 anthropometric ratios, as summarised in Table~\ref{tab:ratios}.
+
+\begin{table}[H]
+\caption{Derived body measurements from circumferences and height (ISO\,7250).}
+\label{tab:ratios}
+\centering
+\begin{tabular}{l l l}
+\toprule
+\textbf{Measurement} & \textbf{Formula} & \textbf{Basis} \\
+\midrule
+Shoulder width & $H \times 0.232$ (M) / $0.215$ (F) & Biacromial ratio \\
+Neck circumference & $H \times 0.210$ (M) / $0.195$ (F) & Height ratio \\
+Arm length & $H \times 0.347$ & Nape to wrist \\
+Trouser length & $H \times 0.470$ & Inseam length \\
+Thigh circumference & $C_{\text{hip}} \times 0.58$ (M) / $0.62$ (F) & Hip-to-thigh ratio \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Chest and waist circumferences are then mapped to size labels across six regional standards (EU, US, UK, IT, FR, DE) using bracket-based lookup tables with a configurable fit preference (slim, regular, oversized) that shifts the bracket by $\pm 1$ level.
+
+\subsection{RAG Fashion Assistant}
+
+The conversational discovery engine follows a five-stage pipeline architecture, depicted in Fig.~\ref{fig:rag-arch}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{figures/rag-model-arch.png}
+    \caption{architecture of the five-stage rag fashion assistant pipeline showing message classification, intent extraction, product retrieval, outfit assembly, and response generation.}
+    \label{fig:rag-arch}
+\end{figure}
+
+\subsubsection{Message Classification and Intent Extraction}
+
+Every incoming message is first classified into one of five categories---\textit{product\_search}, \textit{greeting}, \textit{follow\_up}, \textit{non\_fashion}, or \textit{clarification}---via a lightweight LLM call. Non-search intents receive pre-composed responses immediately, avoiding unnecessary retrieval overhead. For product searches, a second LLM call extracts a structured intent object containing garment type, colours, budget range, sizes, brands, occasion, and gender.
+
+\subsubsection{Hybrid Retrieval}
+
+Retrieval proceeds in two phases. Phase~1 constructs a MongoDB query from the extracted attributes, applying hard filters on stock availability, gender, price range, colour group, size, and brand. If the candidate set is too small, filters are progressively relaxed. Phase~2 ranks surviving candidates by cosine similarity between the query embedding and pre-computed product embeddings generated by Sentence-BERT (\texttt{all-MiniLM-L6-v2})~\cite{reimers2019sbert}. Products below a configurable similarity threshold (default 0.25) are discarded.
+
+\subsubsection{Outfit Assembly}
+
+Retrieved products are assigned to outfit slots (top, bottom, shoes, accessory, outerwear, full-body) and scored along six weighted dimensions, as shown in Table~\ref{tab:scoring}.
+
+\begin{table}[H]
+\caption{Composite scoring dimensions used by the outfit assembler.}
+\label{tab:scoring}
+\centering
+\begin{tabular}{l c}
+\toprule
+\textbf{Dimension} & \textbf{Weight} \\
+\midrule
+Semantic similarity & 40\% \\
+Colour match & 20\% \\
+Occasion affinity & 15\% \\
+Season / material & 10\% \\
+Price fit & 10\% \\
+Brand preference & 5\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Up to three outfits are assembled, each requiring at minimum a top--bottom pairing or a full-body item. Each outfit receives a generated theme name and a total price with budget validation.
+
+Algorithm~\ref{alg:rag} formalises the pipeline.
+
+\begin{algorithm}[H]
+\caption{RAG Fashion Assistant Pipeline}
+\label{alg:rag}
+\begin{algorithmic}[1]
+\State \textbf{Inputs:}
+\State \hspace{1em} $m$: user message; $P$: user profile (optional)
+\State \textbf{Parameters:}
+\State \hspace{1em} $\tau$: similarity threshold; $k$: max outfits; $w$: scoring weights
+\State \textbf{Output:}
+\State \hspace{1em} Bilingual natural-language response with product cards
+\State \textbf{Steps:}
+\State 1. Classify $m$ into category $c$
+\State 2. If $c \notin \{\text{product\_search}\}$: return pre-composed response
+\State 3. Extract structured intent $I$ from $m$
+\State 4. Retrieve candidates via metadata filters on $I$; relax progressively if sparse
+\State 5. Re-rank candidates by Sentence-BERT cosine similarity; discard below $\tau$
+\State 6. Score candidates on six dimensions using weights $w$
+\State 7. Assemble up to $k$ outfits from scored slot groups
+\State 8. Generate bilingual explanation grounded in selected products
+\State 9. Return structured response with product cards and outfit groupings
+\end{algorithmic}
+\end{algorithm}

@@ -1,0 +1,19 @@
+% =====================================================================
+% 1. INTRODUCTION
+% =====================================================================
+\section{Introduction}
+
+Fashion e-commerce has witnessed remarkable expansion over the past decade, yet persistently high product return rates remain one of its most pressing commercial and environmental problems. Industry analyses routinely attribute the majority of clothing returns to a single root cause: the consumer could not adequately judge fit and appearance from the information available at the time of purchase~\cite{han2018viton}. Static studio photographs, no matter how professionally produced, cannot convey how a particular garment will drape across the buyer's own physique, and tabular size charts demand self-measurement skills that most shoppers lack.
+
+Parallel advances in deep generative modelling, 3D scene representation, and natural language understanding have brought a collection of mature building blocks within reach. Latent diffusion models now produce photorealistic conditioned image synthesis~\cite{rombach2022ldm}; 3D Gaussian splatting delivers real-time novel-view rendering from sparse inputs~\cite{kerbl2023gaussians}; parametric body regressors extract anthropometric dimensions from single photographs~\cite{choutas2022shapy}; and dense sentence embeddings enable semantic search over large product catalogues~\cite{reimers2019sbert}. Each of these capabilities has been demonstrated in isolation, yet no existing system combines them into a unified, consumer-ready shopping experience.
+
+This paper presents \projectname{}, an integrated platform that closes this gap. Rather than proposing a novel architecture for any single component, the contribution lies in the systems-level design that orchestrates four heterogeneous AI sub-systems behind a coherent bilingual storefront:
+
+\begin{itemize}[leftmargin=*]
+    \item A multi-pipeline virtual try-on system centred on Prova-VTON, a diffusion model custom-trained on the MVHumanNet dataset~\cite{zheng2024mvhumannet} following the architectural blueprint of VTON360~\cite{he2025vton360}, capable of single-view, multi-angle, and fully multi-view garment synthesis.
+    \item A monocular body-measurement module that augments SHAPY~\cite{choutas2022shapy} predictions with a weight-based circumference correction factor, followed by ISO\,7250 ratio-derived dimensions and multi-region size-chart mapping.
+    \item A 360-degree interactive preview engine that feeds multi-view try-on outputs into a Splatfacto Gaussian splatting pipeline~\cite{tancik2023nerfstudio} for real-time rotation.
+    \item A five-stage Retrieval-Augmented Generation (RAG) fashion assistant that combines intent classification, structured attribute extraction, hybrid metadata--semantic retrieval, outfit assembly, and bilingual response generation.
+\end{itemize}
+
+The remainder of this paper is structured as follows. Section~2 surveys related work. Section~3 details the proposed architecture and algorithmic pipelines. Section~4 reports quantitative benchmarks, latency profiles, and usability findings. Section~5 draws conclusions and identifies directions for future work.

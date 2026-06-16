@@ -1,0 +1,210 @@
+\documentclass[11pt,a4paper]{article}
+
+% ─── Page geometry ───────────────────────────────────────────────────
+\usepackage[a4paper, top=2.5cm, bottom=2.5cm, left=2.5cm, right=2.5cm]{geometry}
+
+% ─── Font: Times New Roman ───────────────────────────────────────────
+\usepackage{times}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{arabtex}
+\usepackage{utf8}
+\setcode{utf8}
+
+% ─── Essential packages ─────────────────────────────────────────────
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{ragged2e}
+\usepackage{microtype}
+\usepackage{setspace}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage[colorlinks=true, linkcolor=blue, citecolor=blue, urlcolor=blue]{hyperref}
+
+% ─── IEEE-style references ─────────────────────────────────────────────
+\usepackage{cite}
+\bibliographystyle{ieeetr}
+
+% ─── Section formatting (IJCB style) ────────────────────────────────
+\titleformat{\section}
+  {\fontsize{13}{15.6}\selectfont\bfseries\raggedright}
+  {\thesection.}{0.5em}{}
+\titlespacing*{\section}{0pt}{12pt}{6pt}
+
+\titleformat{\subsection}
+  {\fontsize{12}{14.4}\selectfont\bfseries\raggedright}
+  {\thesubsection.}{0.5em}{}
+\titlespacing*{\subsection}{0pt}{10pt}{4pt}
+
+\titleformat{\subsubsection}
+  {\fontsize{11}{13.2}\selectfont\bfseries\raggedright}
+  {\thesubsubsection.}{0.5em}{}
+\titlespacing*{\subsubsection}{0pt}{8pt}{3pt}
+
+% ─── Body text ───────────────────────────────────────────────────────
+\setlength{\parindent}{0.5cm}
+\setlength{\parskip}{0pt}
+\singlespacing
+
+% ─── Caption style: 9pt (footnotesize), centered, regular ───────────────────────────
+\captionsetup{font={footnotesize}, justification=centering}
+
+% ─── Table caption: left justified, above table ──────────────────────
+\captionsetup[table]{font={footnotesize}, justification=raggedright, singlelinecheck=false, skip=10pt}
+
+% ─── Header/footer ──────────────────────────────────────────────────
+\pagestyle{fancy}
+\fancyhf{}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0pt}
+
+\newcommand{\projectname}{Prova}
+
+\begin{document}
+
+% =====================================================================
+% TOP OF PAGE HEADER (IJCB Template)
+% =====================================================================
+\thispagestyle{empty}
+
+\begin{center}
+\begin{tabular}{m{2.8cm} m{9cm} m{2.8cm}}
+\centering
+\includegraphics[width=2.8cm]{figures/university-logo.png}
+&
+\centering
+{\small 7 (2026) 1--12} \\[6pt]
+{\large\bfseries International Journal of Computing and\\Business (IJCB)} \\[6pt]
+{\small Available online at \href{https://ijcb.journals.ekb.eg/}{https://ijcb.journals.ekb.eg/}}
+&
+\centering
+\includegraphics[width=2.5cm]{figures/egyptian-bank-logo.png}
+\\
+\end{tabular}
+\end{center}
+
+\noindent\rule{\textwidth}{0.5pt}
+
+\vspace{1cm}
+
+% =====================================================================
+% TITLE
+% =====================================================================
+\begin{center}
+{\fontsize{18}{21.6}\selectfont\bfseries
+Prova: An AI-powered virtual try-on and intelligent fashion discovery platform for e-commerce\par}
+\end{center}
+
+\vspace{0.6cm}
+
+% =====================================================================
+% AUTHORS
+% =====================================================================
+\begin{center}
+{\fontsize{12}{14.4}\selectfont
+Amro Rabea\textsuperscript{a}, Yousef Ayman\textsuperscript{a}, Seif Ezz Eldin\textsuperscript{a}, Seif Eldin Mohamed\textsuperscript{a}, Ahmed Mamdouh\textsuperscript{a}, Alaa Abouelela\textsuperscript{a}, Ahmed Ibrahim\textsuperscript{a,*}}
+\end{center}
+
+\vspace{0.3cm}
+
+\begin{flushleft}
+{\fontsize{10}{12}\selectfont\itshape
+\textsuperscript{a}Department of Computer Science, Modern Academy for Computer Science and Management Technology in Maadi, Cairo, Egypt}
+\end{flushleft}
+
+\vspace{0.5cm}
+
+% =====================================================================
+% ABSTRACT
+% =====================================================================
+\noindent\rule{\textwidth}{0.5pt}
+
+\vspace{0.2cm}
+\noindent{\fontsize{11}{13.2}\selectfont\bfseries Abstract}
+\vspace{0.2cm}
+
+\noindent{\fontsize{11}{13.2}\selectfont\justifying
+Online fashion retail continues to suffer from elevated return rates driven primarily by the disconnect between how garments appear in static product imagery and how they fit individual consumers. This paper introduces \projectname{}, an end-to-end AI-driven fashion e-commerce platform that tackles this challenge through four tightly integrated capabilities: (i) a multi-pipeline virtual try-on system anchored by Prova-VTON, a diffusion-based model custom-trained on the MVHumanNet multi-view dataset for view-consistent garment synthesis; (ii) a monocular body measurement module built upon the SHAPY 3D mesh regressor, enhanced with a novel weight-based circumference correction factor; (iii) an interactive 360-degree garment preview engine powered by 3D Gaussian splatting; and (iv) a conversational fashion assistant underpinned by a five-stage Retrieval-Augmented Generation (RAG) pipeline that performs hybrid semantic--metadata search over the product catalog. The entire system is realised as a service-oriented architecture comprising Next.js, Express, and FastAPI microservices, and exposes a fully bilingual (English/Arabic) storefront. Quantitative evaluation against three state-of-the-art baselines on the MVHumanNet benchmark demonstrates that Prova-VTON attains 95.69\% and 96.92\% human preference in visual quality and geometric alignment, respectively, while maintaining competitive texture fidelity (DINOsim = 0.623). Latency profiling confirms that all interactive pipelines operate within their design-time targets, and usability studies validate the coherence of the integrated experience.
+}
+
+\vspace{0.3cm}
+\noindent{\fontsize{11}{13.2}\selectfont\textbf{Keywords:} Virtual try-on; Diffusion models; 3D Gaussian splatting; Body measurement estimation; Retrieval-augmented generation; Fashion e-commerce; Multiview synthesis; Service-oriented architecture}
+
+\noindent\rule{\textwidth}{0.5pt}
+
+\vspace{0.5cm}
+
+% =====================================================================
+% SECTIONS - loaded from separate files
+% =====================================================================
+\input{sections/introduction}
+\input{sections/related_work}
+\input{sections/proposed_work}
+\input{sections/results}
+\input{sections/conclusion}
+
+% =====================================================================
+% REFERENCES (IEEE format)
+% =====================================================================
+\bibliography{references}
+
+% =====================================================================
+% ARABIC SUMMARY
+% =====================================================================
+\clearpage
+\thispagestyle{empty}
+\begin{center}
+\begin{tabular}{|m{2.8cm}|m{9cm}|m{2.8cm}|}
+\hline
+\centering
+\includegraphics[width=2.8cm]{figures/university-logo.png}
+&
+\centering
+\RL{(2026) العدد (1) المجلد (7)} \par
+\vspace{6pt}
+\textbf{\large \RL{المجلة الدولية للحوسبة والاعمال}} \par
+\vspace{6pt}
+\RL{متاح على الإنترنت على الرابط :} \url{https://ijcb.journals.ekb.eg/}
+&
+\centering
+\includegraphics[width=2.5cm]{figures/egyptian-bank-logo.png}
+\tabularnewline
+\hline
+\end{tabular}
+\end{center}
+
+\vspace{1cm}
+\begin{center}
+\textbf{\Large \RL{بروفا: منصة تعتمد على الذكاء الاصطناعي للقياس الافتراضي واكتشاف الأزياء الذكي للتجارة الإلكترونية}}
+
+\vspace{0.6cm}
+\RL{عمرو ربيع، يوسف أيمن، سيف عز الدين، سيف الدين محمد، أحمد ممدوح، آلاء أبو العلا، أحمد إبراهيم}
+
+\vspace{0.4cm}
+\RL{قسم علوم الحاسب، الأكاديمية الحديثة لعلوم الكمبيوتر وتكنولوجيا الإدارة بالمعادي، القاهرة، مصر}
+\end{center}
+
+\vspace{0.5cm}
+\noindent\rule{\textwidth}{1pt}
+
+\vspace{0.2cm}
+\begin{flushright}
+\textbf{\large \RL{ملخص البحث}}
+\end{flushright}
+
+\begin{arabtext}
+لا يزال بيع الأزياء بالتجزئة عبر الإنترنت يعاني من ارتفاع معدلات الإرجاع التي ترجع بالأساس إلى الاختلاف بين كيفية ظهور الملابس في الصور الثابتة للمنتج وكيفية ملاءمتها للمستهلكين الأفراد. تقدم هذه الورقة "بروفا"، وهي منصة تجارة إلكترونية للأزياء متكاملة تعتمد على الذكاء الاصطناعي لمعالجة هذا التحدي من خلال أربع قدرات مترابطة: (1) نظام قياس افتراضي متعدد المسارات يعتمد على نموذج انتشار مخصص للحصول على صور متناسقة للملابس؛ (2) وحدة لتقدير قياسات الجسم من خلال صورة واحدة محسنة بعامل تصحيح مبتكر؛ (3) محرك معاينة تفاعلي للملابس بزاوية 360 درجة؛ و(4) مساعد أزياء محادثة يعتمد على الذكاء الاصطناعي للبحث الدقيق في الكتالوج. وقد أظهرت التقييمات الكمية أن نظام بروفا يحقق نسبة تفضيل عالية لجودة الصورة والمحاذاة الهندسية متفوقاً بذلك على أحدث الأنظمة الحالية.
+\end{arabtext}
+
+\end{document}

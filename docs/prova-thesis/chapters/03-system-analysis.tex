@@ -130,7 +130,7 @@ This section describes the primary use cases that define user interactions with 
 \begin{figure}[H]
     \centering
     % \includegraphics[width=\textwidth]{figures/use-case-diagram.png}
-    \includegraphics[width=0.9\textwidth]{figures/usecase.png}
+    \includegraphics[width=\textwidth]{figures/usecase.png}
     \caption{Use case diagram for \projectname.}
     \label{fig:usecase}
 \end{figure}
@@ -248,8 +248,7 @@ The system uses MongoDB as its primary data store. While MongoDB is a document-o
 
 \begin{figure}[H]
     \centering
-    % \includegraphics[width=\textwidth]{figures/erd.png}
-    \includegraphics[width=\textwidth]{figures/erd.png}
+    \makebox[\textwidth][c]{\includegraphics[width=1.15\textwidth]{figures/erd.png}}
     \caption{Entity-relationship diagram for \projectname.}
     \label{fig:erd}
 \end{figure}
@@ -307,8 +306,7 @@ The class diagram illustrates the major software components and their relationsh
 
 \begin{figure}[H]
     \centering
-    % \includegraphics[width=\textwidth]{figures/class-diagram.png}
-    \includegraphics[width=\textwidth]{figures/classdiagram.png}
+    \includegraphics[height=0.6\textheight,keepaspectratio]{figures/classdiagram.png}
     \caption{Class diagram showing major components of \projectname.}
     \label{fig:classdiagram}
 \end{figure}
@@ -326,8 +324,7 @@ This section documents the key processes in the system using sequence diagrams t
 \subsection{Product Purchase Flow}
 \begin{figure}[H]
     \centering
-    % \includegraphics[width=\textwidth]{figures/seq-purchase.png}
-    \includegraphics[width=0.9\textwidth]{figures/seq-purchase.png}
+    \makebox[\textwidth][c]{\includegraphics[width=1.15\textwidth]{figures/seq-purchase.png}}
     \caption{Sequence diagram for the product purchase flow.}
     \label{fig:seq-purchase}
 \end{figure}
@@ -337,8 +334,7 @@ The purchase flow proceeds as follows: (1) the shopper adds items to their cart 
 \subsection{Virtual Try-On Flow}
 \begin{figure}[H]
     \centering
-    % \includegraphics[width=\textwidth]{figures/seq-tryon.png}
-    \includegraphics[width=0.9\textwidth]{figures/seq-tryon.png}
+    \makebox[\textwidth][c]{\includegraphics[width=1.15\textwidth]{figures/seq-tryon.png}}
     \caption{Sequence diagram for the 2D virtual try-on flow.}
     \label{fig:seq-tryon}
 \end{figure}
@@ -348,8 +344,7 @@ The 2D try-on flow involves three services: (1) the frontend uploads person and 
 \subsection{RAG Fashion Assistant Flow}
 \begin{figure}[H]
     \centering
-    % \includegraphics[width=\textwidth]{figures/seq-rag.png}
-    \includegraphics[width=0.9\textwidth]{figures/seq-rag.png}
+    \makebox[\textwidth][c]{\includegraphics[width=1.15\textwidth]{figures/seq-rag.png}}
     \caption{Sequence diagram for the RAG fashion assistant pipeline.}
     \label{fig:seq-rag}
 \end{figure}
@@ -359,8 +354,7 @@ The RAG flow proceeds through five stages: (1) the frontend sends the user's nat
 \subsection{Body Measurement Flow}
 \begin{figure}[H]
     \centering
-    % \includegraphics[width=\textwidth]{figures/seq-measurement.png}
-    \includegraphics[width=0.9\textwidth]{figures/seq-measurement.png}
+    \makebox[\textwidth][c]{\includegraphics[width=1.15\textwidth]{figures/seq-measurement.png}}
     \caption{Sequence diagram for body measurement and size recommendation.}
     \label{fig:seq-measurement}
 \end{figure}

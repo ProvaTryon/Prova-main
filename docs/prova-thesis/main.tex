@@ -23,8 +23,70 @@
 \usepackage{titlesec}
 \usepackage{tikz}
 \usetikzlibrary{shapes.geometric, arrows.meta, positioning}
+\usepackage{listings}
+
+\lstdefinelanguage{JavaScript}{
+  keywords={typeof, new, true, false, catch, function, return, null, catch, switch, var, if, in, while, do, else, case, break, const, let, import, export, from, default, class},
+  keywordstyle=\color{provablue}\bfseries,
+  ndkeywords={class, export, boolean, throw, implements, import, this},
+  ndkeywordstyle=\color{darkgray}\bfseries,
+  identifierstyle=\color{black},
+  sensitive=false,
+  comment=[l]{//},
+  morecomment=[s]{/*}{*/},
+  commentstyle=\color{gray}\ttfamily,
+  stringstyle=\color{purple}\ttfamily,
+  morestring=[b]',
+  morestring=[b]"
+}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{provalight},
+    commentstyle=\color{gray},
+    keywordstyle=\color{provablue}\bfseries,
+    numberstyle=\tiny\color{gray},
+    stringstyle=\color{purple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,
+    breaklines=true,
+    captionpos=b,
+    keepspaces=true,
+    numbers=left,
+    numbersep=5pt,
+    showspaces=false,
+    showstringspaces=false,
+    showtabs=false,
+    tabsize=2,
+    frame=single,
+    rulecolor=\color{provablue}
+}
+\lstset{style=mystyle}
 \titleformat{\chapter}[display]
-  {\normalfont\Huge\bfseries\color{provablue}}{\chaptertitlename\ \thechapter}{20pt}{\Huge}[\vspace{1ex}\color{provablue}\titlerule]
+  {\thispagestyle{empty}\vspace*{\fill}\normalfont\Huge\bfseries\centering\color{provablue}}
+  {\chaptertitlename\ \thechapter}
+  {20pt}
+  {\Huge}
+  [\vspace*{\fill}\clearpage]
+\titlespacing*{\chapter}{0pt}{0pt}{0pt}
+
+\newcommand{\frontmatterchapter}[1]{%
+  \clearpage
+  \titleformat{\chapter}[block]
+    {\normalfont\Huge\bfseries\color{provablue}}
+    {}
+    {0pt}
+    {}
+  \titlespacing*{\chapter}{0pt}{0pt}{1em}
+  \chapter*{#1}
+  \addcontentsline{toc}{chapter}{#1}
+  \titleformat{\chapter}[display]
+    {\thispagestyle{empty}\vspace*{\fill}\normalfont\Huge\bfseries\centering\color{provablue}}
+    {\chaptertitlename\ \thechapter}
+    {20pt}
+    {\Huge}
+    [\vspace*{\fill}\clearpage]
+  \titlespacing*{\chapter}{0pt}{0pt}{0pt}
+}
 \titleformat{\section}
   {\normalfont\Large\bfseries\color{provablue}}{\thesection}{1em}{}
 \titleformat{\subsection}
@@ -51,61 +113,94 @@
 \newcommand{\departmentname}{Computer Science Department}
 \newcommand{\degree}{Bachelor Graduation Project}
 \newcommand{\submissiondate}{May 2026}
+\newcommand{\universitylogosize}{3cm}
 
 \begin{document}
 
 \begin{titlepage}
-    \centering
+    % PAGE 1: Project Team Page
+    \begin{center}
+        \includegraphics[width=\universitylogosize]{figures/university-logo.png}\par\vspace{0.5cm}
+        {\Large\bfseries Modern Academy for Computer Science\\And Management Technology in Maadi\\Department: Computer Science.\par}
+        
+        \vspace{1.5cm}
+        {\Large\bfseries B. Sc. Final Year Project\par}
+        
+        \vspace{1.5cm}
+        {\Huge\bfseries \projectname\par}
+    \end{center}
     
-    % University Logo
-    \includegraphics[width=0.25\textwidth]{figures/university-logo.png}\par\vspace{0.5cm}
-    
-    {\scshape\LARGE \universityname \par}
-    \vspace{0.3cm}
-    {\scshape\Large \facultyname \par}
-    {\large \departmentname \par}
+    \vspace{1.5cm}
+    \begin{flushleft}
+        {\Large\bfseries Team Members:\par}
+        \vspace{0.3cm}
+        \begin{itemize}[label=\textbullet, leftmargin=*]
+            \item \large \textbf{Amro Rabea}
+            \item \large \textbf{Yousef Ayman}
+            \item \large \textbf{Seif Ezz Eldin}
+            \item \large \textbf{Seif Eldin Mohamed}
+            \item \large \textbf{Ahmed Mamdouh}
+        \end{itemize}
+        
+        \vspace{1.5cm}
+        \centering
+        {\Large\bfseries Supervisors:\par}
+        \vspace{0.3cm}
+        {\large \textbf{Dr. Ahmed Ibrahim}\par}
+        \vspace{0.2cm}
+        {\large \textbf{Eng. Alaa Abouelela}\par}
+    \end{flushleft}
     
     \vspace{1cm}
+    \begin{center}
+        {\Large\bfseries 2025-2026\par}
+    \end{center}
     
-    {\Huge\bfseries \thesistitle \par}
+    \clearpage
+
+    % PAGE 2: Academy Vision & Mission
+    \begin{flushleft}
+        \includegraphics[width=\universitylogosize]{figures/university-logo.png}\par\vspace{0.5cm}
+        {\Large\bfseries Modern Academy for Computer Science\\And Management Technology in Maadi\\Department: Computer Science.\par}
+        
+        \vspace{1.5cm}
+        {\Large\bfseries Vision:\par}
+        \vspace{0.5cm}
+        {\large Modern Academy for Computer Science and Management Technology in Maadi vision is to achieve excellence in its fields of specialization to match the new local, regional, and international updates in the labor market.\par}
+        
+        \vspace{1.5cm}
+        {\Large\bfseries Mission:\par}
+        \vspace{0.5cm}
+        {\large The modern academy is committed to prepare professional graduates specialized in the fields of Computer Science, information technology, Management of Information Systems, Accounting, Business Administration and Economic to provide the regional and Arab community with professional cadres equipped with theoretical and professional bases required in the labor market in the aforementioned fields. The academy keeps up with scientific and technological advancements through research activities besides participating in the surrounding community and environmental services, all this within the frame of committed recognized and scientific recognized and ethical values.\par}
+    \end{flushleft}
     
-    \vspace{1cm}
+    \clearpage
     
-    {\Large\itshape Submitted by:\par}
-    \vspace{0.3cm}
-    {\Large 
-        Amro Rabea\\
-        Yousef Ayman\\
-        Seif Ezz Eldin\\
-        Seif Eldin Mohamed\\
-        Ahmed Mamdouh\par
-    }
+    % PAGE 3: Program Vision & Mission
+    \begin{flushleft}
+        \includegraphics[width=\universitylogosize]{figures/university-logo.png}\par\vspace{0.5cm}
+        {\Large\bfseries Modern Academy for Computer Science\\And Management Technology in Maadi\\Department: Computer Science.\par}
+        
+        \vspace{1.5cm}
+        {\Large\bfseries PROGRAM VISION\par}
+        \vspace{0.5cm}
+        {\large The program vision is to achieve excellence in the fields of computer science locally, regionally and internationally within education quality frame.\par}
+        
+        \vspace{1.5cm}
+        {\Large\bfseries PROGRAM MISSION\par}
+        \vspace{0.5cm}
+        {\large The computer science program is committed to provide updated educational services that match the standards of the quality of education, in order to prepare a distinguished graduate having the ability to complete in the field of computer science conduct advanced scientific researches and provide effective services to the society and surrounding environment.\par}
+    \end{flushleft}
     
-    \vspace{1cm}
-    
-    {\Large\itshape Supervised by:\par}
-    \vspace{0.2cm}
-    {\Large Dr. Ahmed Ibrahim\par}
-    \vspace{0.4cm}
-    {\Large\itshape Teaching Assistant:\par}
-    \vspace{0.2cm}
-    {\Large Eng. Alaa Abouelela\par}
-    
-    \vfill
-    
-    {\large \degree \par}
-    {\large \submissiondate \par}
 \end{titlepage}
 
 \pagenumbering{roman}
 \onehalfspacing
 
-\chapter*{Abstract}
-\addcontentsline{toc}{chapter}{Abstract}
+\frontmatterchapter{Abstract}
 The rapid growth of fashion e-commerce is hindered by the inability of consumers to physically try on garments, leading to high return rates and poor user satisfaction. This thesis presents \projectname, an AI-powered fashion e-commerce platform designed to bridge the gap between digital browsing and physical retail. \projectname\ integrates advanced deep learning models to offer a comprehensive suite of features: high-fidelity 2D and multi-angle virtual try-on utilizing Prova-VTON (a custom diffusion model trained on the MVHumanNet dataset) and specialized garment heuristics, 360-degree interactive video previews, and an intelligent body measurement extraction pipeline powered by the SHAPY 3D mesh regressor with a novel weight-based correction algorithm. Furthermore, the platform introduces a Retrieval-Augmented Generation (RAG) conversational fashion assistant that interprets complex user intents to provide personalized, inventory-grounded styling recommendations. Built on a robust microservice architecture using Next.js, Express, and FastAPI, the system demonstrates the successful orchestration of heavy AI inference workloads within a responsive, bilingual (English/Arabic) web application. Rigorous testing validates the system's architectural scalability, inference performance, and usability, proving its viability as a next-generation shopping experience.
 
-\chapter*{Acknowledgements}
-\addcontentsline{toc}{chapter}{Acknowledgements}
+\frontmatterchapter{Acknowledgements}
 First and foremost, we would like to express our sincere gratitude to our supervisor, Dr. Ahmed Ibrahim, for his invaluable guidance, continuous support, and profound knowledge throughout the development of this graduation project. His insights and feedback were instrumental in shaping the technical direction of \projectname. 
 
 We also extend our deepest appreciation to our Teaching Assistant, Eng. Alaa Abouelela, for her patience, practical advice, and dedication in helping us navigate and overcome complex technical challenges during the implementation phase. 
@@ -126,6 +221,22 @@ Finally, we would like to thank our families and friends for their unwavering en
 \include{chapters/06-testing}
 \include{chapters/07-conclusion}
 
-\printbibliography
+% Use frontmatter-style heading so "References" appears on top of the content
+\clearpage
+\titleformat{\chapter}[block]
+  {\normalfont\Huge\bfseries\color{provablue}}
+  {}
+  {0pt}
+  {}
+\titlespacing*{\chapter}{0pt}{0pt}{1em}
+\printbibliography[title={References},heading=bibintoc]
+% Restore default chapter display format
+\titleformat{\chapter}[display]
+  {\thispagestyle{empty}\vspace*{\fill}\normalfont\Huge\bfseries\centering\color{provablue}}
+  {\chaptertitlename\ \thechapter}
+  {20pt}
+  {\Huge}
+  [\vspace*{\fill}\clearpage]
+\titlespacing*{\chapter}{0pt}{0pt}{0pt}
 
 \end{document}

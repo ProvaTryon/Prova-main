@@ -1,0 +1,75 @@
+% =====================================================================
+% 4. RESULTS AND DISCUSSION
+% =====================================================================
+\section{Results and Discussion}
+
+\subsection{Quantitative Evaluation of Prova-VTON}
+
+The multiview synthesis quality of Prova-VTON was evaluated on the MVHumanNet benchmark against three established baselines: DreamWaltz, TIP-Editor, and GaussCtrl. Two complementary evaluation axes were considered: (a)~\textit{texture preservation}, measured by CLIP consistency (CLIPcons) and DINO similarity (DINOsim), which quantify how faithfully the generated garments retain the visual identity of the original clothing; and (b)~\textit{geometry alignment}, assessed via human-preference voting (Vote\textsubscript{quality} and Vote\textsubscript{align}), which captures structural correctness and cross-view coherence.
+
+\begin{table}[H]
+\caption{Quantitative comparison on the MVHumanNet dataset. $\uparrow$ = higher is better.}
+\label{tab:quantitative}
+\centering
+\begin{tabular}{l cccc}
+\toprule
+\textbf{Method} & \textbf{CLIPcons} $\uparrow$ & \textbf{DINOsim} $\uparrow$ & \textbf{Vote\textsubscript{quality}} & \textbf{Vote\textsubscript{align}} \\
+\midrule
+DreamWaltz & 0.935 & 0.495 & 0.46\% & 0.46\% \\
+TIP-Editor & \textbf{0.948} & 0.512 & 2.15\% & 1.38\% \\
+GaussCtrl & 0.938 & 0.521 & 1.69\% & 1.23\% \\
+\textbf{Ours (Prova-VTON)} & 0.933 & \textbf{0.623} & \textbf{95.69\%} & \textbf{96.92\%} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Table~\ref{tab:quantitative} reveals a striking disparity. All three baselines score below 3\% in human-preference voting for both quality and alignment, indicating severe failures in multiview geometric consistency. Prova-VTON, by contrast, achieves 95.69\% quality preference and 96.92\% alignment preference, confirming that the cross-view attention conditioning and MVHumanNet training yield structurally coherent outputs. In texture fidelity, Prova-VTON attains the highest DINOsim score (0.623), surpassing TIP-Editor (0.512) by a considerable margin. Its CLIPcons (0.933) is marginally below TIP-Editor's best (0.948), a gap attributable to the trade-off between strict per-view appearance matching and global cross-view consistency.
+
+\subsection{Pipeline Latency Profiling}
+
+Table~\ref{tab:latency} summarises end-to-end response times measured under typical operating conditions on commodity hardware (NVIDIA T4 for remote try-on, RTX~3050 for local measurement inference).
+
+\begin{table}[H]
+\caption{Measured latency for each AI pipeline under typical conditions.}
+\label{tab:latency}
+\centering
+\begin{tabular}{l c c}
+\toprule
+\textbf{Pipeline} & \textbf{Hardware} & \textbf{Latency} \\
+\midrule
+2D Try-On (Prova-VTON) & Remote T4 GPU & 12--18\,s \\
+Multi-Angle (per view) & Cloud API & 8--12\,s \\
+Multi-Angle (4 views) & Cloud API & 20--30\,s \\
+Multiview (end-to-end) & Remote GPU cluster & 2--3\,min \\
+Body Measurement (SHAPY) & Local RTX 3050 & 8--12\,s \\
+RAG (product search) & CPU & 4--7\,s \\
+RAG (greeting / non-fashion) & CPU & 1--2\,s \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+All interactive-mode pipelines satisfy their design-time non-functional requirements: e-commerce endpoints remain below 500\,ms, single-inference AI endpoints complete within 60 seconds, and the RAG pipeline responds within its 10-second target. The multiview pipeline is inherently batch-oriented and is surfaced to the user with a progress indicator rather than a blocking wait.
+
+\subsection{RAG Pipeline Stage Breakdown}
+
+The conversational assistant was profiled at each of its five stages. Classification averages 0.5--1.0\,s, intent extraction 1.5--2.5\,s, hybrid retrieval 0.1--0.3\,s, outfit assembly $<$0.1\,s, and response generation 2.0--3.0\,s, yielding a total round-trip of 4--7\,s for product-search queries. Non-search messages bypass the retrieval and assembly stages entirely, reducing latency to 1--2\,s. The dominant cost lies in the two LLM calls (classification and intent extraction); replacing these with fine-tuned local classifiers represents a clear optimisation path.
+
+\subsection{Body Measurement Correction Impact}
+
+The weight-based correction factor (Eq.~\ref{eq:correction}) demonstrably reduces circumference estimation error. Without correction, SHAPY's predictions are systematically biased by clothing volume and camera distance. With correction enabled, the pipeline assigns confidence tiers based on the magnitude of the weight discrepancy: deviations of 5--10\,kg yield a confidence of 0.85, 10--15\,kg reduces it to 0.75, and deviations exceeding 15\,kg produce 0.65. Across the user-testing cohort, corrected measurements led to more consistent size recommendations compared to raw SHAPY outputs, particularly for users wearing loose-fitting clothing in their input photographs.
+
+\subsection{Usability Findings}
+
+A cohort of test users interacted with the deployed platform and provided qualitative feedback across three dimensions:
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Try-on realism.} Users rated Prova-VTON highly for texture preservation on patterned fabrics. The multi-angle mode was singled out as the most informative feature, as it revealed fit details invisible in front-view-only outputs. Minor hallucination artefacts (e.g., altered background elements) were occasionally noted but did not diminish perceived garment accuracy.
+    \item \textbf{Bilingual coherence.} Switching between Arabic and English preserved all session state---cart contents, chat history, and try-on results---without requiring re-authentication. RTL layout mirroring was verified to correctly flip margins, paddings, and navigation elements.
+    \item \textbf{Conversational assistant.} Users successfully issued complex, multi-constraint queries (e.g., ``a casual blue outfit for a summer wedding under \$100''). The pipeline correctly decomposed such requests into structured intent attributes and returned relevant, budget-compliant outfit groupings.
+\end{itemize}
+
+\subsection{Discussion}
+
+The experimental results confirm that the integration of multiple mature AI subsystems into a unified shopping experience is both technically feasible and practically valuable. The service-oriented decomposition ensures that individual model upgrades---a better diffusion checkpoint, a faster embedding model---can be introduced without disrupting the broader platform.
+
+Several limitations merit acknowledgement. First, try-on fidelity degrades for heavily occluded poses and low-resolution inputs. Second, monocular measurement remains fundamentally limited by depth ambiguity, and the correction factor partially---but not fully---compensates for this. Third, the multiview pipeline's latency precludes real-time interaction, restricting it to an asynchronous workflow. Fourth, the current system relies on pretrained model checkpoints rather than proposing novel training procedures.
