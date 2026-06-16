@@ -87,12 +87,53 @@ The authentication module implements the dual-token strategy. The \texttt{auth} 
 \subsection{E-Commerce and Community Subsystems}
 Product search leverages MongoDB text indices combined with field-level filters to ensure sub-500ms response times. The order module implements atomic stock decrementation to prevent overselling. The community subsystem realizes the polymorphic content model for comments and votes, utilizing discriminator fields (\texttt{targetType}). All interactions trigger event-driven notifications governed by a 30-day MongoDB TTL index for automatic cleanup.
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.9\textwidth]{figures/backend-api.png}
-    \caption{Backend API endpoint structure showing the modular route organization.}
-    \label{fig:backend-api}
-\end{figure}
+\begin{lstlisting}[language=JavaScript, caption=Backend API router configuration., label=lst:backend-api]
+import { Router } from 'express';
+import { AuthController } from '../controllers/auth.controller';
+import { ProductController } from '../controllers/product.controller';
+import { OrderController } from '../controllers/order.controller';
+import { TryOnController } from '../controllers/tryon.controller';
+import { requireAuth, requireRole } from '../middlewares/auth.guard';
+
+const router = Router();
+
+// ==========================================
+// Authentication & User Management
+// ==========================================
+router.post('/auth/register', AuthController.register);
+router.post('/auth/login', AuthController.login);
+router.post('/auth/refresh-token', AuthController.refreshToken);
+
+// ==========================================
+// E-Commerce Core
+// ==========================================
+router.get('/products', ProductController.searchProducts);
+router.get('/products/:id', ProductController.getProductDetails);
+router.post('/orders', requireAuth, OrderController.checkout);
+
+// ==========================================
+// AI & Try-On Services (Proxied to FastAPI)
+// ==========================================
+router.post(
+  '/ai/tryon/multi-angle', 
+  requireAuth, 
+  TryOnController.processMultiAngleTryOn
+);
+
+router.post(
+  '/ai/measurements/estimate', 
+  requireAuth, 
+  TryOnController.estimateBodyMeasurements
+);
+
+router.post(
+  '/ai/prova-vton/generate-video', 
+  requireAuth, 
+  TryOnController.generate360Video
+);
+
+export default router;
+\end{lstlisting}
 
 \section{Frontend Implementation}
 \label{sec:impl-frontend}
@@ -146,28 +187,28 @@ The frontend uses \textbf{Radix UI} as its headless component primitive library,
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.9\textwidth]{figures/frontend-home.png}
+    \includegraphics[width=\textwidth]{figures/frontend-home.png}
     \caption{The \projectname\ homepage with bilingual navigation and featured products.}
     \label{fig:frontend-home}
 \end{figure}
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.9\textwidth]{figures/frontend-shop.png}
+    \includegraphics[width=\textwidth]{figures/frontend-shop.png}
     \caption{The shop page with multi-faceted filtering and product grid layout.}
     \label{fig:frontend-shop}
 \end{figure}
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.9\textwidth]{figures/frontend-tryon.png}
+    \includegraphics[width=\textwidth]{figures/frontend-tryon.png}
     \caption{The virtual try-on interface with image upload and result display.}
     \label{fig:frontend-tryon}
 \end{figure}
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.9\textwidth]{figures/frontend-chat.png}
+    \includegraphics[width=\textwidth]{figures/frontend-chat.png}
     \caption{The AI fashion assistant chat interface with embedded product cards.}
     \label{fig:frontend-chat}
 \end{figure}
@@ -286,7 +327,7 @@ The engine returns recommendations for all six supported regions (EU, US, UK, IT
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.9\textwidth]{figures/measurement-results.png}
+    \includegraphics[width=\textwidth]{figures/measurement-results.png}
     \caption{Size recommendation displayed to the user on the product page based on estimated body measurements.}
     \label{fig:measurement-results}
 \end{figure}
@@ -352,7 +393,7 @@ For interactive 360-degree viewing, multiview try-on outputs can be processed th
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.9\textwidth]{figures/360-preview.png}
+    \includegraphics[width=\textwidth]{figures/360-preview.png}
     \caption{360-degree rotation video preview generated from multiview try-on outputs.}
     \label{fig:360-preview}
 \end{figure}

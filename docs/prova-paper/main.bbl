@@ -1,0 +1,98 @@
+\begin{thebibliography}{10}
+
+\bibitem{han2018viton}
+X.~Han, Z.~Wu, Z.~Wu, R.~Yu, and L.~S. Davis, ``Viton: An image-based virtual
+  try-on network,'' in {\em Proceedings of the European Conference on Computer
+  Vision (ECCV)}, 2018.
+
+\bibitem{rombach2022ldm}
+R.~Rombach, A.~Blattmann, D.~Lorenz, P.~Esser, and B.~Ommer, ``High-resolution
+  image synthesis with latent diffusion models,'' in {\em Proceedings of the
+  IEEE/CVF Conference on Computer Vision and Pattern Recognition}, 2022.
+
+\bibitem{kerbl2023gaussians}
+B.~Kerbl, G.~Kopanas, T.~Leimk{\"u}hler, and G.~Drettakis, ``3d gaussian
+  splatting for real-time radiance field rendering,'' {\em ACM Transactions on
+  Graphics}, vol.~42, no.~4, 2023.
+
+\bibitem{choutas2022shapy}
+V.~Choutas, L.~M{\"u}ller, C.-H.~P. Huang, S.~Tang, D.~Tzionas, and M.~J.
+  Black, ``Accurate 3d body shape regression using metric and semantic
+  attributes,'' in {\em Proceedings of the IEEE/CVF Conference on Computer
+  Vision and Pattern Recognition}, 2022.
+
+\bibitem{reimers2019sbert}
+N.~Reimers and I.~Gurevych, ``Sentence-bert: Sentence embeddings using siamese
+  bert-networks,'' in {\em Proceedings of the 2019 Conference on Empirical
+  Methods in Natural Language Processing and the 9th International Joint
+  Conference on Natural Language Processing}, 2019.
+
+\bibitem{zheng2024mvhumannet}
+Z.~Zheng, X.~Han, Y.~Wang, Y.~Wang, and Q.~Dai, ``Mvhumannet: A large-scale
+  dataset of 3d human scans with multi-view images,'' in {\em Proceedings of
+  the IEEE/CVF Conference on Computer Vision and Pattern Recognition},
+  pp.~10134--10144, 2024.
+
+\bibitem{he2025vton360}
+Z.~He, Y.~Ning, Y.~Qin, G.~Wang, S.~Yang, L.~Lin, and G.~Li, ``Vton 360:
+  High-fidelity virtual try-on from any viewing direction,'' 2025.
+
+\bibitem{tancik2023nerfstudio}
+M.~Tancik, E.~Weber, E.~Ng, R.~Li, B.~Yi, T.~Wang, A.~Kristoffersen, J.~Austin,
+  K.~Salahi, A.~Ahuja, D.~McAllister, J.~Kerr, and A.~Kanazawa, ``Nerfstudio: A
+  modular framework for neural radiance field development,'' in {\em ACM
+  SIGGRAPH 2023 Conference Proceedings}, 2023.
+
+\bibitem{wang2018cpvton}
+B.~Wang, H.~Zheng, X.~Liang, Y.~Chen, L.~Lin, and M.~Yang, ``Toward
+  characteristic-preserving image-based virtual try-on network,'' in {\em
+  Proceedings of the European Conference on Computer Vision (ECCV)}, 2018.
+
+\bibitem{lee2022hrviton}
+S.~Lee, G.~Gu, S.~Park, S.~Choi, and J.~Choo, ``High-resolution virtual try-on
+  with misalignment and occlusion-handled conditions,'' in {\em Proceedings of
+  the European Conference on Computer Vision (ECCV)}, 2022.
+
+\bibitem{kim2024stableviton}
+J.~Kim, G.~Gu, M.~Park, S.~Park, and J.~Choo, ``Stableviton: Learning semantic
+  correspondence with latent diffusion model for virtual try-on,'' in {\em
+  Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern
+  Recognition}, 2024.
+
+\bibitem{choi2024idmvton}
+Y.~Choi, S.~Kwak, K.~Lee, H.~Choi, and J.~Shin, ``Improving diffusion models
+  for authentic virtual try-on in the wild,'' in {\em Proceedings of the
+  IEEE/CVF Conference on Computer Vision and Pattern Recognition}, 2024.
+
+\bibitem{xu2024ootdiffusion}
+Y.~Xu, T.~Gu, W.~Chen, and C.~Chen, ``Ootdiffusion: Outfitting fusion based
+  latent diffusion for controllable virtual try-on,'' in {\em arXiv preprint
+  arXiv:2403.01779}, 2024.
+
+\bibitem{mildenhall2020nerf}
+B.~Mildenhall, P.~P. Srinivasan, M.~Tancik, J.~T. Barron, R.~Ramamoorthi, and
+  R.~Ng, ``Nerf: Representing scenes as neural radiance fields for view
+  synthesis,'' in {\em Proceedings of the European Conference on Computer
+  Vision (ECCV)}, 2020.
+
+\bibitem{loper2015smpl}
+M.~Loper, N.~Mahmood, J.~Romero, G.~Pons-Moll, and M.~J. Black, ``Smpl: A
+  skinned multi-person linear model,'' {\em ACM Transactions on Graphics},
+  vol.~34, no.~6, 2015.
+
+\bibitem{guler2018densepose}
+R.~A. G{\"u}ler, N.~Neverova, and I.~Kokkinos, ``Densepose: Dense human pose
+  estimation in the wild,'' in {\em Proceedings of the IEEE/CVF Conference on
+  Computer Vision and Pattern Recognition}, 2018.
+
+\bibitem{jocher2023yolov8}
+G.~Jocher, A.~Chaurasia, and J.~Qiu, ``Ultralytics yolov8.''
+  \url{https://github.com/ultralytics/ultralytics}, 2023.
+
+\bibitem{lewis2020rag}
+P.~Lewis, E.~Perez, A.~Piktus, F.~Petroni, V.~Karpukhin, N.~Goyal,
+  H.~K{\"u}ttler, M.~Lewis, W.-t. Yih, T.~Rockt{\"a}schel, S.~Riedel, and
+  D.~Kiela, ``Retrieval-augmented generation for knowledge-intensive nlp
+  tasks,'' in {\em Advances in Neural Information Processing Systems}, 2020.
+
+\end{thebibliography}

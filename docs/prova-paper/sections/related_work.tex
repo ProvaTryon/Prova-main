@@ -1,0 +1,26 @@
+% =====================================================================
+% 2. RELATED WORK
+% =====================================================================
+\section{Related Work}
+
+\subsection{Image-Based Virtual Try-On}
+
+The virtual try-on problem seeks to render a target garment onto a person photograph with photorealistic fidelity. Early solutions adopted a two-stage paradigm in which a geometric warping module aligns the garment to the body followed by a refinement network that blends the result. VITON~\cite{han2018viton} established this template with a clothing-agnostic person representation, while CP-VTON~\cite{wang2018cpvton} introduced thin-plate spline transformations for more robust spatial alignment. HR-VITON~\cite{lee2022hrviton} extended the pipeline to $1024 \times 768$ resolution by incorporating an occlusion-aware segmentation stage.
+
+More recently, diffusion-based approaches have replaced explicit warping with learned attention mechanisms. StableVITON~\cite{kim2024stableviton} injects garment features into the denoising process through zero-cross-attention blocks, while IDM-VTON~\cite{choi2024idmvton} fuses high-level semantics with low-level textures via a dual encoder. OOTDiffusion~\cite{xu2024ootdiffusion} formulates try-on as outfitting fusion within a pretrained latent diffusion model. These models achieve substantially higher texture fidelity than warp-and-refine predecessors, albeit at greater computational expense.
+
+\subsection{Multiview Try-On and 3D Reconstruction}
+
+Single-view synthesis cannot fully convey garment fit, since back and side perspectives often reveal crucial styling information. VTON360~\cite{he2025vton360} addresses this limitation by conditioning the diffusion process on multi-view priors and enforcing cross-view attention to maintain garment identity across camera angles. Nonetheless, preserving fine texture coherence over large angular gaps remains an open challenge.
+
+For continuous viewpoint exploration, Neural Radiance Fields~\cite{mildenhall2020nerf} achieve high-quality novel-view synthesis but require minutes of per-scene optimisation. 3D Gaussian Splatting~\cite{kerbl2023gaussians} offers a compelling alternative: an explicit, point-based scene representation that supports real-time rasterisation with comparable visual quality. The Nerfstudio toolkit~\cite{tancik2023nerfstudio} packages several splatting variants, including Splatfacto, into a production-ready framework.
+
+\subsection{Body Measurement Estimation}
+
+Parametric body models such as SMPL~\cite{loper2015smpl} encode human shape as a low-dimensional vector from which surface geometry---and thus circumference measurements---can be derived. SHAPY~\cite{choutas2022shapy} trains a regression network to predict SMPL shape parameters from a single image, supervised by linguistic shape attributes. Although effective, monocular regression introduces systematic bias from clothing, camera perspective, and pose, motivating calibration strategies that leverage user-supplied reference values.
+
+DensePose~\cite{guler2018densepose} complements shape regression by establishing dense pixel-to-surface correspondences on the body, providing the conditioning maps that modern try-on models require. Person detection, typically handled by YOLOv8~\cite{jocher2023yolov8}, precedes these dense analyses.
+
+\subsection{Retrieval-Augmented Generation}
+
+Retrieval-Augmented Generation (RAG)~\cite{lewis2020rag} grounds language-model outputs in external knowledge by prepending retrieved documents to the generation prompt. In a fashion context, retrieval must handle short, formulaic product descriptions, fuzzy colour vocabularies, and hard constraints on size and price. Sentence-BERT~\cite{reimers2019sbert} provides the embedding backbone for semantic ranking, but practical systems require hybrid pipelines that interleave structured metadata filters with dense similarity search to balance precision and recall.

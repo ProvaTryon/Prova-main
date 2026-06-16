@@ -1,0 +1,31 @@
+graph TD
+    classDef mainNode fill:#f9f9f9,stroke:#333,stroke-width:2px;
+    classDef subNode fill:#fff,stroke:#666,stroke-width:1px,stroke-dasharray: 5 5;
+    classDef endNode fill:#e1f5fe,stroke:#0288d1,stroke-width:2px;
+
+    User([User Message]) --> Classifier{Message Classifier}
+    
+    Classifier -- "Non-Fashion / Greeting" --> Quick[Quick Response]
+    Classifier -- "Product Search" --> Extractor[Intent Extractor]
+    
+    Extractor -- "Structured Intent" --> Retriever[Hybrid Retriever]
+    
+    subgraph Retrieval Phase
+        Retriever --> MetaFilter[MongoDB Metadata Filter]
+        MetaFilter --> DenseRank[Sentence-BERT Dense Ranking]
+    end
+    
+    DenseRank -- "Top Candidate Products" --> Assembler[Outfit Assembler]
+    
+    subgraph Scoring & Assembly
+        Assembler --> Scoring[6-Dimension Scoring]
+        Scoring --> OutfitGen[Outfit Grouping]
+    end
+    
+    OutfitGen -- "Assembled Outfits" --> Composer[Bilingual Response Composer]
+    Quick --> Response([Final Output to User])
+    Composer --> Response
+
+    class User,Response endNode;
+    class Classifier,Extractor,Retriever,Assembler,Composer mainNode;
+    class MetaFilter,DenseRank,Scoring,OutfitGen,Quick subNode;

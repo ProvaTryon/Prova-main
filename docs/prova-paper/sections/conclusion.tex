@@ -1,0 +1,10 @@
+% =====================================================================
+% 5. CONCLUSION
+% =====================================================================
+\section{Conclusion}
+
+This paper presented \projectname{}, an integrated AI-powered fashion e-commerce platform that addresses the persistent fit-and-appearance gap in online clothing shopping. By orchestrating four heterogeneous AI subsystems---multi-pipeline virtual try-on, monocular body measurement with weight-based correction, 3D Gaussian splatting for interactive 360-degree previews, and a five-stage RAG conversational fashion assistant---behind a bilingual (English/Arabic) service-oriented architecture, the platform delivers a cohesive shopping experience that substantially exceeds what any individual component provides in isolation.
+
+Quantitative evaluation on the MVHumanNet benchmark demonstrated that Prova-VTON, the custom multiview diffusion model at the core of the system, achieves dominant performance in human-preference voting (95.69\% quality, 96.92\% alignment) alongside the highest DINOsim texture fidelity among all evaluated methods. Latency profiling confirmed that all interactive pipelines operate within their design-time targets, and usability studies validated the platform's bilingual coherence, try-on realism, and conversational utility.
+
+Several avenues remain for future investigation. Model quantisation and TensorRT compilation could substantially reduce inference latency, potentially bringing the multiview pipeline into interactive-speed territory. Extending synthesis from static images to video-to-video try-on would allow consumers to observe dynamic garment draping. Incorporating reinforcement learning from human feedback into the RAG assistant would enable continuous personalisation of styling recommendations. Finally, integrating the Gaussian splatting outputs with WebXR could unlock augmented-reality try-on experiences on mobile devices.
